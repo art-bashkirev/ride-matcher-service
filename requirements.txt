@@ -1,0 +1,4 @@
+pymongo[gssapi,aws,ocsp,snappy,zstd,encryption]
+aiogram
+python-dotenv
+pydantic
