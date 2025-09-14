@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "art-bashkirev",
+        "projectKey": "art-bashkirev_ride-matcher-service"
+    }
+}
