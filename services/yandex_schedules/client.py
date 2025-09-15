@@ -7,6 +7,7 @@ import aiohttp
 from .models.carrier import Carrier, CarrierRequest
 from .models.copyright import CopyrightRequest, CopyrightResponse
 from .models.search import SearchRequest, SearchResponse
+from .models.schedule import ScheduleRequest, ScheduleResponse
 
 
 class YandexSchedules:
@@ -74,6 +75,11 @@ class YandexSchedules:
         data = await self._get("search", **params)
 
         return SearchResponse(**data)
+
+    async def get_schedule(self, req: ScheduleRequest) -> ScheduleResponse:
+        params = req.model_dump(mode='json', exclude_none=True, by_alias=True)
+        data = await self._get("schedule", **params)
+        return ScheduleResponse(**data)
 
     # async def get_stations_list(self, req: StationsListRequest | None = None) -> StationsListResponse:
     #     """

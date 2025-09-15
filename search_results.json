@@ -6995,10 +6995,10 @@
       "title": "Царицыно"
     },
     "from_": {
-      "code": "c10747",
-      "type": "settlement",
-      "popular_title": "Подольск",
-      "short_title": "Подольск",
+      "code": "s9600731",
+      "type": "station",
+      "popular_title": "",
+      "short_title": "",
       "title": "Подольск"
     }
   }

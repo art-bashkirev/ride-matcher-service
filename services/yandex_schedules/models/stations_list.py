@@ -6,12 +6,6 @@ from .common import TransportType
 class StationsListRequest(BaseModel):
     pass
 
-
-class SearchCodes(BaseModel):
-    yandex_code: str | None
-    esr_code: str | None
-
-
 class Station(BaseModel):
     direction: str | None
     codes: SearchCodes

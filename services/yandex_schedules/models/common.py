@@ -1,14 +1,44 @@
 from enum import Enum
-
 from pydantic import BaseModel
 
 
-class System(Enum):
+class Interval(BaseModel):
+    density: str | None = None
+    begin_time: str | None = None
+    end_time: str | None = None
+
+
+
+
+
+class SearchCodes(BaseModel):
+    yandex_code: str | None
+    esr_code: str | None
+
+
+class Pagination(BaseModel):
+    total: int
+    limit: int
+    offset: int | None = None
+
+
+class CodingSystem(Enum):
     YANDEX = "yandex"
     IATA = "iata"
     SIRENA = "sirena"
     EXPRESS = "express"
     ESR = "esr"
+
+
+class ShowSystems(Enum):
+    YANDEX = "yandex"
+    ESR = "esr"
+    ALL = "all"
+
+
+class ThreadFilter(Enum):
+    DEPARTURE = "departure"
+    ARRIVAL = "arrival"
 
 
 class TransportSubtype(BaseModel):

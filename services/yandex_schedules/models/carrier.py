@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from .common import System
+from .common import CodingSystem
 
 
 class CarrierCodes(BaseModel):
@@ -10,21 +10,21 @@ class CarrierCodes(BaseModel):
 
 
 class Carrier(BaseModel):
-    code: int
-    contacts: str
-    url: str
-    title: str
-    phone: str
-    codes: CarrierCodes
-    address: str
-    logo: str
-    email: str
+    code: int | None = None
+    contacts: str | None = None
+    url: str | None = None
+    title: str | None = None
+    phone: str | None = None
+    codes: CarrierCodes | None = None
+    address: str | None = None
+    logo: str | None = None
+    email: str | None = None
     offices: list | None = None
 
 
 class CarrierRequest(BaseModel):
     code: str
-    system: System | None = None
+    system: CodingSystem | None = None
 
 
 class CarrierResponse(BaseModel):

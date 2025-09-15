@@ -1,14 +1,8 @@
-
 from pydantic import BaseModel, Field
-from .carrier import Carrier
-from .common import TransportType, TransportSubtype, System, SegmentType, StationType
 
+from .common import TransportType, Pagination, CodingSystem, SegmentType, StationType
+from .thread import Thread
 
-
-class Interval(BaseModel):
-    density: str | None = None
-    begin_time: str | None = None
-    end_time: str | None = None
 
 
 
@@ -17,32 +11,16 @@ class Price(BaseModel):
     whole: int | None = None
 
 
-
 class Place(BaseModel):
     currency: str | None = None
     price: Price | None = None
     name: str | None = None
 
 
-
 class TicketsInfo(BaseModel):
     et_marker: bool | None = None
     places: list[Place] | None = None
 
-
-
-class Thread(BaseModel):
-    uid: str | None = None
-    title: str | None = None
-    interval: Interval | None = None
-    number: str | None = None
-    short_title: str | None = None
-    thread_method_link: str | None = None
-    carrier: Carrier | None = None
-    transport_type: TransportType | None = None
-    vehicle: str | None = None
-    transport_subtype: TransportSubtype | None = None
-    express_type: str | None = None
 
 
 
@@ -55,7 +33,6 @@ class SegmentPoint(BaseModel):
     short_title: str | None = None
     transport_type: TransportType | None = None
     type: SegmentType | None = None
-
 
 
 class Segment(BaseModel):
@@ -75,7 +52,6 @@ class Segment(BaseModel):
     arrival_platform: str | None = None
 
 
-
 class SearchPoint(BaseModel):
     code: str | None = None
     type: SegmentType | None = None
@@ -84,18 +60,9 @@ class SearchPoint(BaseModel):
     title: str | None = None
 
 
-
 class SearchSegment(BaseModel):
     arrival: str | None = None
     thread: Thread | None = None
-
-
-
-class Pagination(BaseModel):
-    total: int | None = None
-    limit: int | None = None
-    offset: int | None = None
-
 
 
 class SearchClarification(BaseModel):
@@ -104,19 +71,17 @@ class SearchClarification(BaseModel):
     from_: SearchPoint | None = Field(default=None, validation_alias='from', serialization_alias='from')
 
 
-
 class SearchRequest(BaseModel):
     from_: str = Field(serialization_alias='from')
     to: str
     date: str | None = None
     transport_types: TransportType | None = None
-    system: System | None = None
+    system: CodingSystem | None = None
     offset: int = 0
     limit: int = 100
     add_days_mask: bool = False
     result_timezone: str | None = None
     transfers: bool = False
-
 
 
 class SearchResponse(BaseModel):

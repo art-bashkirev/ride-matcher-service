@@ -4,4 +4,7 @@
     <option name="sdkName" value="ride-matcher-service" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="ride-matcher-service" project-jdk-type="Python SDK" />
+  <component name="PythonCompatibilityInspectionAdvertiser">
+    <option name="version" value="3" />
+  </component>
 </project>
