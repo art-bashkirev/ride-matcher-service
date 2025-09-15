@@ -1,5 +1,6 @@
 pymongo[gssapi,aws,ocsp,snappy,zstd,encryption]
 aiogram[i18n]
+aiohttp
 python-dotenv
 pydantic
 pydantic-settings
