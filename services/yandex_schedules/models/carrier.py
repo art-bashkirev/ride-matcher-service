@@ -19,7 +19,7 @@ class Carrier(BaseModel):
     address: str
     logo: str
     email: str
-    offices: list
+    offices: list | None = None
 
 
 class CarrierRequest(BaseModel):

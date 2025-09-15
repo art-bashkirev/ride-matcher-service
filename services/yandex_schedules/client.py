@@ -31,6 +31,8 @@ class YandexSchedules:
         if not self._session:
             raise RuntimeError("Client session not initialized. Use 'async with YandexSchedules()'.")
         params["apikey"] = self.api_key
+        # Convert all params to strings for yarl compatibility
+        params = {k: str(v) for k, v in params.items()}
         # params.setdefault("format", "json")
         async with self._session.get(endpoint, params=params) as resp:
             resp.raise_for_status()
@@ -38,9 +40,6 @@ class YandexSchedules:
             # Check the response headers to confirm the issue
             print(f"Status: {resp.status}")
             print(f"Content-Type: {resp.headers.get('Content-Type')}")
-
-            with open("resp", "w") as f:
-                json.dump(await resp.json(content_type=None), f)
 
             try:
                 # Tell aiohttp to ignore the Content-Type header and parse the body as JSON.
@@ -58,7 +57,7 @@ class YandexSchedules:
     async def get_carrier(self, req: CarrierRequest) -> Union[Carrier, List[Carrier]]:
         # The API's endpoint for a single carrier is "carrier".
         # You need to pass the parameters from the request object.
-        params = req.model_dump(mode='json', exclude_none=True)  # Converts the Pydantic model to a dictionary.
+        params = req.model_dump(mode='json', exclude_none=True, by_alias=True)  # Converts the Pydantic model to a dictionary.
         data = await self._get("carrier", **params)
 
         # The API returns a dictionary with keys 'carrier' and 'carriers'.
@@ -71,7 +70,7 @@ class YandexSchedules:
             raise ValueError("Unexpected response format from Yandex Schedules API.")
 
     async def get_search_results(self, req: SearchRequest) -> SearchResponse:
-        params = req.model_dump(mode='json', exclude_none=True)
+        params = req.model_dump(mode='json', exclude_none=True, by_alias=True)
         data = await self._get("search", **params)
 
         return SearchResponse(**data)

@@ -1,113 +1,126 @@
-from pydantic import BaseModel
 
+from pydantic import BaseModel, Field
 from .carrier import Carrier
 from .common import TransportType, TransportSubtype, System, SegmentType, StationType
 
 
+
 class Interval(BaseModel):
-    density: str
-    begin_time: str
-    end_time: str
+    density: str | None = None
+    begin_time: str | None = None
+    end_time: str | None = None
+
 
 
 class Price(BaseModel):
-    cents: int
-    whole: int
+    cents: int | None = None
+    whole: int | None = None
+
 
 
 class Place(BaseModel):
-    currency: str
-    price: Price
-    name: str
+    currency: str | None = None
+    price: Price | None = None
+    name: str | None = None
+
 
 
 class TicketsInfo(BaseModel):
-    et_marker: bool
-    places: list[Place]
+    et_marker: bool | None = None
+    places: list[Place] | None = None
+
 
 
 class Thread(BaseModel):
-    uid: str
-    title: str
-    interval: Interval
-    number: str
-    short_title: str
-    thread_method_link: str
-    carrier: Carrier
-    transport: TransportType
-    vehicle: str
-    transport_subtype: TransportSubtype
-    express_type: str | None
+    uid: str | None = None
+    title: str | None = None
+    interval: Interval | None = None
+    number: str | None = None
+    short_title: str | None = None
+    thread_method_link: str | None = None
+    carrier: Carrier | None = None
+    transport_type: TransportType | None = None
+    vehicle: str | None = None
+    transport_subtype: TransportSubtype | None = None
+    express_type: str | None = None
+
 
 
 class SegmentPoint(BaseModel):
-    code: str
-    title: str
-    station_type: StationType
-    station_type_name: str
-    popular_title: str
-    short_title: str
-    transport_type: TransportType
-    type: SegmentType
+    code: str | None = None
+    title: str | None = None
+    station_type: StationType | None = None
+    station_type_name: str | None = None
+    popular_title: str | None = None
+    short_title: str | None = None
+    transport_type: TransportType | None = None
+    type: SegmentType | None = None
+
 
 
 class Segment(BaseModel):
-    arrival: str
-    from_: SegmentPoint  # ! OBJECT
-    to: SegmentPoint  # ! OBJECT
-    thread: Thread
-    departure_platform: str | None
-    departure: str
-    stops: str
-    departure_terminal: str | None
-    has_transfers: bool
-    tickets_info: object  # ! OBJECT
-    duration: int
-    arrival_terminal: str | None
-    start_date: str
-    arrival_platform: str | None
+    arrival: str | None = None
+    from_: SegmentPoint | None = Field(default=None, validation_alias='from', serialization_alias='from')
+    to: SegmentPoint | None = None
+    thread: Thread | None = None
+    departure_platform: str | None = None
+    departure: str | None = None
+    stops: str | None = None
+    departure_terminal: str | None = None
+    has_transfers: bool | None = None
+    tickets_info: TicketsInfo | None = None
+    duration: int | None = None
+    arrival_terminal: str | None = None
+    start_date: str | None = None
+    arrival_platform: str | None = None
+
 
 
 class SearchPoint(BaseModel):
-    code: str
-    type: SegmentType
-    popular_title: str
-    short_title: str
-    title: str
+    code: str | None = None
+    type: SegmentType | None = None
+    popular_title: str | None = None
+    short_title: str | None = None
+    title: str | None = None
+
 
 
 class SearchSegment(BaseModel):
-    arrival: str
-    thread: Thread
+    arrival: str | None = None
+    thread: Thread | None = None
+
 
 
 class Pagination(BaseModel):
-    total: int
-    limit: int
-    offset: int
+    total: int | None = None
+    limit: int | None = None
+    offset: int | None = None
+
 
 
 class SearchClarification(BaseModel):
-    date: str
-    to: SearchPoint
-    from_: SearchPoint
+    date: str | None = None
+    to: SearchPoint | None = None
+    from_: SearchPoint | None = Field(default=None, validation_alias='from', serialization_alias='from')
+
 
 
 class SearchRequest(BaseModel):
-    from_: str
+    from_: str = Field(serialization_alias='from')
     to: str
-    date: str
-    transport_types: TransportType | None
-    system: System | None
+    date: str | None = None
+    transport_types: TransportType | None = None
+    system: System | None = None
     offset: int = 0
     limit: int = 100
     add_days_mask: bool = False
-    result_timezone: str
+    result_timezone: str | None = None
     transfers: bool = False
 
 
+
 class SearchResponse(BaseModel):
-    pagination: Pagination
-    interval_segments: list
-    segments: list
-    search: SearchClarification
+    pagination: Pagination | None = None
+    interval_segments: list[Segment] | None = None
+    segments: list[Segment] | None = None
+    search: SearchClarification | None = None
