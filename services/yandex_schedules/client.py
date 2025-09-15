@@ -1,11 +1,13 @@
 import json
 import os
-import aiohttp
 from typing import List, Union
 
+import aiohttp
+
+from .models.carrier import Carrier, CarrierRequest
 from .models.copyright import CopyrightRequest, CopyrightResponse
-from .models.carrier import Carrier, CarrierRequest, CarrierResponse
-from .models.stations_list import StationsListRequest, StationsListResponse
+from .models.search import SearchRequest, SearchResponse
+
 
 class YandexSchedules:
     BASE_URL = "https://api.rasp.yandex.net/v3.0/"
@@ -56,7 +58,7 @@ class YandexSchedules:
     async def get_carrier(self, req: CarrierRequest) -> Union[Carrier, List[Carrier]]:
         # The API's endpoint for a single carrier is "carrier".
         # You need to pass the parameters from the request object.
-        params = req.model_dump(mode='json', exclude_none=True) # Converts the Pydantic model to a dictionary.
+        params = req.model_dump(mode='json', exclude_none=True)  # Converts the Pydantic model to a dictionary.
         data = await self._get("carrier", **params)
 
         # The API returns a dictionary with keys 'carrier' and 'carriers'.
@@ -68,12 +70,18 @@ class YandexSchedules:
         else:
             raise ValueError("Unexpected response format from Yandex Schedules API.")
 
-    async def get_stations_list(self, req: StationsListRequest | None = None) -> StationsListResponse:
-        """
-        Retrieves the complete list of stations.
+    async def get_search_results(self, req: SearchRequest) -> SearchResponse:
+        params = req.model_dump(mode='json', exclude_none=True)
+        data = await self._get("search", **params)
 
-        This endpoint returns a large dataset and is not intended for frequent use.
-        """
-        endpoint = "stations_list"
-        data = await self._get(endpoint)
-        return StationsListResponse(**data)
+        return SearchResponse(**data)
+
+    # async def get_stations_list(self, req: StationsListRequest | None = None) -> StationsListResponse:
+    #     """
+    #     Retrieves the complete list of stations.
+    #
+    #     This endpoint returns a large dataset and is not intended for frequent use.
+    #     """
+    #     endpoint = "stations_list"
+    #     data = await self._get(endpoint)
+    #     return StationsListResponse(**data)

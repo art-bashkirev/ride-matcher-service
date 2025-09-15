@@ -1,10 +1,13 @@
 from pydantic import BaseModel
+
 from .common import System
+
 
 class CarrierCodes(BaseModel):
     icao: str | None
     sirena: str | None
     iata: str | None
+
 
 class Carrier(BaseModel):
     code: int
@@ -18,9 +21,11 @@ class Carrier(BaseModel):
     email: str
     offices: list
 
+
 class CarrierRequest(BaseModel):
     code: str
     system: System | None = None
+
 
 class CarrierResponse(BaseModel):
     pass

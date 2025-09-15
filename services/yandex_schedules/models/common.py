@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from enum import Enum
+
+from pydantic import BaseModel
 
 
 class System(Enum):
@@ -8,6 +9,13 @@ class System(Enum):
     SIRENA = "sirena"
     EXPRESS = "express"
     ESR = "esr"
+
+
+class TransportSubtype(BaseModel):
+    color: str
+    code: str
+    title: str
+
 
 class TransportType(Enum):
     PLANE = "plane"
@@ -19,5 +27,25 @@ class TransportType(Enum):
 
 
 class StationType(Enum):
+    STATION = "station"
+    PLATFORM = "platform"
+    STOP = "stop"
+    CHECKPOINT = "checkpoint"
+    POST = "post"
+    CROSSING = "crossing"
+    OVERTAKING_POINT = "overtaking_point"
+    TRAIN_STATION = "train_station"
+    AIRPORT = "airport"
+    BUS_STATION = "bus_station"
+    BUS_STOP = "bus_stop"
+    UNKNOWN = "unknown"
+    PORT = "port"
+    PORT_POINT = "port_point"
+    WHARF = "wharf"
+    RIVER_PORT = "river_port"
+    MARINE_STATION = "marine_station"
+
+
+class SegmentType(Enum):
     STATION = "station"
     SETTLEMENT = "settlement"

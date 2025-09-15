@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+
 
 class Copyright(BaseModel):
     """
@@ -16,13 +16,13 @@ class Copyright(BaseModel):
     url: str = Field(..., description="URL Яндекс Расписаний (Yandex Schedules URL)")
     text: str = Field(..., description="Уведомительный текст (Notification text)")
 
+
 class CopyrightRequest(BaseModel):
     """
-    An empty model representing a request for copyright information.
-
-    This class currently takes no parameters.
+    This request takes no parameters.
     """
     pass
+
 
 class CopyrightResponse(BaseModel):
     """
