@@ -61,7 +61,7 @@ class SearchPoint(BaseModel):
 
 
 class SearchSegment(BaseModel):
-    arrival: str | None = None
+    arrival: str
     thread: Thread | None = None
 
 

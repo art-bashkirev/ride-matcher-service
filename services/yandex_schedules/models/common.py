@@ -8,9 +8,6 @@ class Interval(BaseModel):
     end_time: str | None = None
 
 
-
-
-
 class SearchCodes(BaseModel):
     yandex_code: str | None
     esr_code: str | None

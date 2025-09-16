@@ -11,7 +11,9 @@ class ScheduleRequest(BaseModel):
     system: CodingSystem | None = None
     show_systems: ShowSystems | None = None
     result_timezone: str | None = None
-    # DOES SUPPORT 'limit'????
+    # DOES SUPPORT 'limit'??? YES, but not documented
+    limit: int | None = None
+    offset: int | None = 0
 
 class Schedule(BaseModel):
     except_days: str | None
