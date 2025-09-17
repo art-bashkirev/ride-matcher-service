@@ -100,7 +100,7 @@ def test_config_defaults():
         
         config = reload_config()
         
-        print(f"✓ API Key: {mask_secret(config.yandex_schedules_api_key)}")
+        print(f"✓ API Key present and loaded correctly.")
         print(f"✓ Default Timezone: {config.result_timezone}")
         print(f"✓ Default Environment: {config.environment}")
         print(f"✓ Is Production: {config.is_production}")
