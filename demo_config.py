@@ -122,7 +122,7 @@ def demo_legacy_compatibility():
     timezone_str = get_result_timezone()
     timezone_obj = get_timezone()
     
-    print(f"get_yandex_api_key(): {api_key}")
+    print(f"API key is set: {bool(api_key)}")
     print(f"get_result_timezone(): {timezone_str}")
     print(f"get_timezone(): {timezone_obj}")
     print()
