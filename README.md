@@ -4,7 +4,7 @@ A service for matching ride requests with train schedules using the Yandex Sched
 
 ## Configuration
 
-This project uses a production-ready configuration system. See [CONFIG.md](CONFIG.md) for detailed documentation.
+This project uses Pydantic BaseSettings for configuration management.
 
 ### Quick Start
 
@@ -27,23 +27,14 @@ This project uses a production-ready configuration system. See [CONFIG.md](CONFI
    timezone = config.result_timezone
    ```
 
+### Environment Variables
+
+- `YANDEX_SCHEDULES_API_KEY` (required): Your Yandex Schedules API key
+- `RESULT_TIMEZONE` (optional): Timezone for results (default: "Europe/Moscow")  
+- `ENVIRONMENT` (optional): Environment name (default: "development")
+
 ### Running
 
 ```bash
 python main.py
 ```
-
-### Testing Configuration
-
-```bash
-python test_config.py
-python demo_config.py
-```
-
-## Features
-
-- Production-ready environment configuration
-- Type-safe configuration management
-- Support for development and production environments
-- Comprehensive validation and error handling
-- Backward compatibility with existing code
