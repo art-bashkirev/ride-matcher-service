@@ -13,6 +13,14 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# Helper function to mask sensitive values for safe logging
+def mask_secret(secret, visible=3):
+    if not isinstance(secret, str):
+        secret = str(secret)
+    if len(secret) <= visible + 2:
+        return '*' * len(secret)
+    return secret[:visible] + '*' * (len(secret) - visible - 2) + secret[-2:]
+
 def test_config_with_env_vars():
     """Test config module with environment variables set."""
     print("=== Testing config with environment variables ===")
@@ -28,7 +36,7 @@ def test_config_with_env_vars():
         # Force reload to pick up new env vars
         config = reload_config()
         
-        print(f"✓ API Key: {config.yandex_schedules_api_key}")
+        print(f"✓ API Key: {mask_secret(config.yandex_schedules_api_key)}")
         print(f"✓ Timezone: {config.result_timezone}")
         print(f"✓ Environment: {config.environment}")
         print(f"✓ Is Production: {config.is_production}")
@@ -92,7 +100,7 @@ def test_config_defaults():
         
         config = reload_config()
         
-        print(f"✓ API Key: {config.yandex_schedules_api_key}")
+        print(f"✓ API Key: {mask_secret(config.yandex_schedules_api_key)}")
         print(f"✓ Default Timezone: {config.result_timezone}")
         print(f"✓ Default Environment: {config.environment}")
         print(f"✓ Is Production: {config.is_production}")
