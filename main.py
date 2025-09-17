@@ -18,7 +18,7 @@ async def main():
     # This replaces direct environment variable access with a production-ready config system
     config = get_config()
     
-    print(f"Using configuration:")
+    print("Using configuration:")
     print(f"  - Environment: {config.environment}")
     print(f"  - Timezone: {config.result_timezone}")
     print(f"  - Is Production: {config.is_production}")
