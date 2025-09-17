@@ -161,7 +161,7 @@ def test_legacy_compatibility():
         timezone_str = get_result_timezone()
         timezone_obj = get_timezone()
         
-        print(f"✓ Legacy API Key: {mask_secret(api_key)}")
+        print("✓ Legacy API Key: [REDACTED]")
         print(f"✓ Legacy Timezone: {timezone_str}")
         print(f"✓ Legacy Timezone Object: {timezone_obj}")
         
