@@ -41,35 +41,36 @@ class UserIntent(NamedTuple):
 # This represents the `users` collection in your database.
 MOCK_USER_INTENTS = [
     UserIntent(
-        user_id="Anna (Podolsk)",
+        user_id="Alice (Podolsk, arr. by 8:30 - 9:00)",
         from_station_code="s9600731", # Podolsk
         to_station_code="s9600891",   # Tsaritsyno
         arrive_by_start=time(8, 30),
         arrive_by_end=time(9, 0)
     ),
     UserIntent(
-        user_id="Boris (Silikatnaya)",
+        user_id="Bob (Silikatnaya, arr. by 8:30 - 9:00)",
         from_station_code="s9602273", # Silikatnaya
         to_station_code="s9600891",   # Tsaritsyno
-        arrive_by_end=time(9, 0),
-        arrive_by_start=time(8, 30)
+        arrive_by_start=time(8, 30),
+        arrive_by_end=time(9, 0)
+
     ),
     UserIntent(
-        user_id="Charlie (Podolsk)",
+        user_id="Charlie (Podolsk, arr. by 9:15 - 10:00)",
         from_station_code="s9600731", # Podolsk
         to_station_code="s9600891",   # Tsaritsyno
         arrive_by_start=time(9, 15),
         arrive_by_end=time(10, 0)
     ),
     UserIntent(
-        user_id="Diana (Shcherbinka)",
+        user_id="Dan (Shcherbinka, arr. by 8:45-9:15)",
         from_station_code="s9600951", # Shcherbinka
         to_station_code="s9600891",   # Tsaritsyno
         arrive_by_start=time(8, 45),
         arrive_by_end=time(9, 15)
     ),
      UserIntent(
-        user_id="Eva (Podolsk, late)",
+        user_id="Eve (Podolsk, 9:15 - 10:00)",
         from_station_code="s9600731", # Podolsk
         to_station_code="s9600891",   # Tsaritsyno
         arrive_by_start=time(9, 15),
@@ -77,6 +78,10 @@ MOCK_USER_INTENTS = [
     ),
 ]
 
+# TODO: Reimplement in Modules, Provide feasible visual checks for the algorithm
+# TODO: Implement Departure Time Window Logic!
+# TODO: Check for different Arrival stations (Thread Matching may not work as well), say someone going from Podolsk to Tekstilschiki, during which the train journey might encounter possibly different groups, but that's for later. Now just check whether overlapping routes (which are determined from search) apply correctly
+# TODO: Display User-specific Candidate Trains
 
 # --- Core Logic Implementation ---
 

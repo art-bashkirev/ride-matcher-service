@@ -4,7 +4,7 @@ from .common import Interval, TransportType, TransportSubtype, ShowSystems
 from .carrier import Carrier
 
 # Thread UID may change over time.
-# Therefore it is needed to fetch the latest thread UID from Search or Schedule responses
+# Therefore, it is needed to fetch the latest thread UID from Search or Schedule responses
 class ThreadCodes(BaseModel):
     express: str | None = None
     yandex: str | None = None

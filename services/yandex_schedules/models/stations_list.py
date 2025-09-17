@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from .common import TransportType
+from .common import TransportType, SearchCodes, StationType
 
 
 class StationsListRequest(BaseModel):

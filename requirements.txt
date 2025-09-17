@@ -1,6 +1,7 @@
 pymongo[gssapi,aws,ocsp,snappy,zstd,encryption]
-aiogram[i18n]
+redis-om
 aiohttp
+python-telegram-bot
 python-dotenv
 pydantic
 pydantic-settings
