@@ -36,7 +36,7 @@ def test_config_with_env_vars():
         # Force reload to pick up new env vars
         config = reload_config()
         
-        print(f"✓ API Key: {mask_secret(config.yandex_schedules_api_key)}")
+        print("✓ API Key: [REDACTED]")
         print(f"✓ Timezone: {config.result_timezone}")
         print(f"✓ Environment: {config.environment}")
         print(f"✓ Is Production: {config.is_production}")
