@@ -1,7 +1,9 @@
-pymongo[gssapi,aws,ocsp,snappy,zstd,encryption]
+pymongo[snappy,zstd,encryption]
 redis-om
-aiohttp
+aiohttp[speedups]
+
 python-telegram-bot
 python-dotenv
 pydantic
 pydantic-settings
+pytz
