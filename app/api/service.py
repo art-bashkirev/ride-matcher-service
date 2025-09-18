@@ -7,45 +7,31 @@ from aiohttp import web
 
 from config.log_setup import get_logger
 from config.settings import get_config
-
+from .middleware.logging import request_logging_middleware
+from .routes.health import health
 
 logger = get_logger(__name__)
+
+class ApiServerService:
+    """High-level API server service with middleware and routes."""
 
     def __init__(self, host: Optional[str] = None, port: Optional[int] = None):
         cfg = get_config()
         self._host = host or cfg.http_host
         self._port = port or cfg.http_port
-        # Inline logging middleware
-        async def request_logging_middleware(request, handler):
-            import uuid
-            start = time.time()
-            request_id = str(uuid.uuid4())
-            request['request_id'] = request_id
-            logger.info("--> %s %s rqid=%s", request.method, request.rel_url, request_id)
-            try:
-                response = await handler(request)
-                return response
-            finally:
-                duration = (time.time() - start) * 1000
-                status = getattr(locals().get('response', None), 'status', None)
-                logger.info("<-- %s %s %s %.2fms rqid=%s", request.method, request.rel_url, status, duration, request_id)
-
         self._app = web.Application(middlewares=[request_logging_middleware])
         self._app['started_at'] = None
-        self._runner = None
-        self._site = None
+        self._runner: Optional[web.AppRunner] = None
+        self._site: Optional[web.TCPSite] = None
         self._started = False
-        # Inline health route
-        async def health(request):
-            started_at = request.app['started_at']
-            uptime = time.time() - started_at if started_at else 0.0
-            return web.json_response({
-                "status": "ok",
-                "uptime_seconds": round(uptime, 3),
-                "started_at_epoch": started_at,
-                "request_id": request.get('request_id'),
-            })
+        self._register_routes()
+
+    def _register_routes(self):
         self._app.router.add_get('/healthz', health)
+
+    @property
+    def app(self) -> web.Application:
+        return self._app
 
     async def start(self):
         if self._started:
