@@ -26,6 +26,9 @@ class Config(BaseSettings):
     http_host: str = Field(default="0.0.0.0")
     http_port: int = Field(default=8000)
 
+    # Telegram bot
+    telegram_bot_token: str | None = Field(default=None)
+
     # Database Configuration
     redis_uri: str | None = Field(default=None)
     mongodb_uri: str | None = Field(default=None)
