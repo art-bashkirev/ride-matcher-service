@@ -1,6 +1,8 @@
 pymongo[snappy,zstd,encryption]
 redis-om
+redis[asyncio]
 aiohttp[speedups]
+tortoise-orm[asyncpg]
 
 python-telegram-bot
 python-dotenv
