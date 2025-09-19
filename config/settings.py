@@ -29,6 +29,12 @@ class Config(BaseSettings):
     # Telegram bot
     telegram_bot_token: str | None = Field(default=None)
     
+    # Redis configuration for caching
+    redis_host: str = Field(default="localhost")
+    redis_port: int = Field(default=6379)
+    redis_db: int = Field(default=0)
+    redis_password: str | None = Field(default=None)
+    
     @field_validator('result_timezone')
     def validate_timezone(cls, v):
         """Validate timezone string."""
