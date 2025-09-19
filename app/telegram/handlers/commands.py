@@ -91,7 +91,8 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     schedule_request = ScheduleRequest(
                         station=station_id,
                         date=today,
-                        result_timezone=config.result_timezone
+                        result_timezone=config.result_timezone,
+                        limit=1000
                     )
                     logger.info("Making API request for station %s with timezone %s", station_id, config.result_timezone)
                     response = await client.get_schedule(schedule_request)
