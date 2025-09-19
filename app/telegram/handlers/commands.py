@@ -17,23 +17,32 @@ logger = get_logger(__name__)
 
 def filter_future_departures(schedule: list[Schedule]) -> list[Schedule]:
     """Filter schedule to only include departures after current time."""
-    now = datetime.now()
+    config = get_config()
+    now = datetime.now(config.timezone)
     filtered = []
+    logger.debug("Filtering %d schedule items using timezone %s", len(schedule), config.result_timezone)
+    
     for item in schedule:
         if item.departure:
             try:
                 departure_dt = datetime.fromisoformat(item.departure)
-                # If departure has timezone, make now timezone-aware
-                if departure_dt.tzinfo:
-                    now = datetime.now(departure_dt.tzinfo)
+                
+                # Ensure departure is also in the same timezone
+                if departure_dt.tzinfo is None:
+                    departure_dt = config.timezone.localize(departure_dt)
+                
                 if departure_dt > now:
                     filtered.append(item)
-            except ValueError:
+                    
+            except ValueError as e:
+                logger.warning("Failed to parse departure time '%s': %s", item.departure, e)
                 # If parsing fails, include it anyway
                 filtered.append(item)
         else:
             # If no departure time, include it
             filtered.append(item)
+    
+    logger.info("Filtered schedule: %d items before, %d items after", len(schedule), len(filtered))
     return filtered
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,25 +74,28 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         station_id = message_text
-        today = datetime.now().date().isoformat()
+        config = get_config()
+        today = datetime.now(config.timezone).date().isoformat()
+        logger.info("Searching schedule for station %s on %s (%s timezone)", station_id, today, config.result_timezone)
         try:
             # Check cache first
             cached_response = CacheService.get_cached_model(station_id, today, ScheduleResponse)
             if cached_response:
-                logger.info("Cache hit for station %s on %s", station_id, today)
+                logger.info("Cache hit for station %s on %s (%d items)", station_id, today, len(cached_response.schedule))
                 filtered_schedule = filter_future_departures(cached_response.schedule)
                 reply_text = format_schedule_reply(station_id, today, filtered_schedule) + " (from cache)"
             else:
                 logger.info("Cache miss for station %s on %s, fetching from API", station_id, today)
                 # Cache miss - fetch from API
-                config = get_config()
                 async with YandexSchedules() as client:
                     schedule_request = ScheduleRequest(
                         station=station_id,
                         date=today,
                         result_timezone=config.result_timezone
                     )
+                    logger.info("Making API request for station %s with timezone %s", station_id, config.result_timezone)
                     response = await client.get_schedule(schedule_request)
+                    logger.info("API response received: %d schedule items", len(response.schedule))
                     
                     # Filter departures to only show those after current time
                     filtered_schedule = filter_future_departures(response.schedule)
@@ -92,8 +104,7 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     CacheService.set_cached_model(
                         station_id, 
                         today, 
-                        response,
-                        ttl_hours=1
+                        response
                     )
                     
                     reply_text = format_schedule_reply(station_id, today, filtered_schedule) + " (fetched fresh)"

@@ -19,6 +19,7 @@ class Config(BaseSettings):
 
     # Application Configuration
     result_timezone: str = Field(default="Europe/Moscow")
+
     environment: str = Field(default="development")
     log_level: str = Field(default="INFO")
 
