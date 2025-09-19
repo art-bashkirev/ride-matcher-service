@@ -1,6 +1,8 @@
 import asyncio
 import json
 
+import anyio
+
 from services.yandex_schedules.client import YandexSchedules
 from services.yandex_schedules.models.schedule import ScheduleRequest
 from services.yandex_schedules.models.search import SearchRequest
@@ -38,8 +40,8 @@ async def main():
     # Let's select a random Thread UID from the search results
     async with YandexSchedules(config.yandex_schedules_api_key) as client:
         search_resp = await client.get_search_results(search_request)
-        with open("test_search_results.json", "w", encoding="utf-8") as f:
-            f.write(search_resp.model_dump_json(indent=2))
+        async with await anyio.open_file("test_search_results.json", "w", encoding="utf-8") as f:
+            await f.write(search_resp.model_dump_json(indent=2))
 
         if not search_resp.segments:
             print("No segments found in search results.")
@@ -61,8 +63,8 @@ async def main():
             date=date,
         )
         thread_resp = await client.get_thread(thread_request)
-        with open("thread_result.json", "w", encoding="utf-8") as f:
-            f.write(thread_resp.model_dump_json(indent=2))
+        async with await anyio.open_file("thread_result.json", "w", encoding="utf-8") as f:
+            await f.write(thread_resp.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":

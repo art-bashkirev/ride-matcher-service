@@ -52,7 +52,7 @@ class YandexSchedules:
                 print(f"Failed to decode JSON: {e}")
                 raise
 
-    async def get_copyright(self, req: CopyrightRequest | None = None) -> CopyrightResponse:
+    async def get_copyright(self) -> CopyrightResponse:
         data = await self._get("copyright")
         return CopyrightResponse(**data)
 

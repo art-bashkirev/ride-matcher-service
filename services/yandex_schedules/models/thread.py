@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from .common import Interval, TransportType, TransportSubtype, ShowSystems
+from .common import Interval, TransportType, TransportSubtype, ShowSystems, StationType
 from .carrier import Carrier
 
 # Thread UID may change over time.
@@ -13,7 +13,7 @@ class ThreadCodes(BaseModel):
 class Station(BaseModel):
     codes: ThreadCodes
     title: str | None
-    station_type: object  # TODO
+    station_type: StationType | None
     station_type_name: str | None
     popular_title: str | None
     short_title: str | None
@@ -64,7 +64,7 @@ class ThreadResponse(BaseModel):
     days: str | None = None
     carrier: Carrier | None = None
     transport_type: TransportType | None = None
-    stops: list[object] #! TODO
+    stops: list[Stop] | None = None
     vehicle: str | None = None
     start_date: str | None = None
     transport_subtype: TransportSubtype | None = None
