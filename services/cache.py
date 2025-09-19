@@ -76,7 +76,7 @@ class CacheService:
         return None
 
     @staticmethod
-    def set_cached_model(identifier: str, date: str, model: BaseModel, ttl_hours: int = 1, model_name: Optional[str] = None):
+    def set_cached_model(identifier: str, date: str, model: BaseModel, ttl_hours: int = 3, model_name: Optional[str] = None):
         """Cache model in Redis with TTL."""
         try:
             client = RedisClientManager.get_client()

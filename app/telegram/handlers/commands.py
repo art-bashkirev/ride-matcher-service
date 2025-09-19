@@ -12,6 +12,24 @@ from services.yandex_schedules.models.schedule import ScheduleRequest, Schedule
 from services.cache import CacheService
 from app.telegram.utils import is_valid_station_id, format_schedule_reply
 
+def filter_future_departures(schedule: list[Schedule]) -> list[Schedule]:
+    """Filter schedule to only include departures after current time."""
+    now = datetime.now()
+    filtered = []
+    for item in schedule:
+        if item.departure:
+            try:
+                departure_time = datetime.strptime(item.departure, "%H:%M").time()
+                if departure_time > now.time():
+                    filtered.append(item)
+            except ValueError:
+                # If parsing fails, include it anyway
+                filtered.append(item)
+        else:
+            # If no departure time, include it
+            filtered.append(item)
+    return filtered
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message is None:
         return
@@ -41,7 +59,8 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Check cache first
             cached_response = CacheService.get_cached_model(station_id, today, ScheduleResponse)
             if cached_response:
-                reply_text = format_schedule_reply(station_id, today, cached_response.schedule) + " (from cache)"
+                filtered_schedule = filter_future_departures(cached_response.schedule)
+                reply_text = format_schedule_reply(station_id, today, filtered_schedule) + " (from cache)"
             else:
                 # Cache miss - fetch from API
                 config = get_config()
@@ -53,7 +72,10 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     response = await client.get_schedule(schedule_request)
                     
-                    # Cache the response
+                    # Filter departures to only show those after current time
+                    filtered_schedule = filter_future_departures(response.schedule)
+                    
+                    # Cache the full response (unfiltered for future use)
                     CacheService.set_cached_model(
                         station_id, 
                         today, 
@@ -61,7 +83,7 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         ttl_hours=1
                     )
                     
-                    reply_text = format_schedule_reply(station_id, today, response.schedule) + " (fetched fresh)"
+                    reply_text = format_schedule_reply(station_id, today, filtered_schedule) + " (fetched fresh)"
         except Exception as e:
             reply_text = f"Error fetching schedule: {str(e)}"
 
