@@ -41,7 +41,7 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Check cache first
             cached_response = CacheService.get_cached_model(station_id, today, ScheduleResponse)
             if cached_response:
-                reply_text = format_schedule_reply(station_id, today, cached_response.schedule)
+                reply_text = format_schedule_reply(station_id, today, cached_response.schedule) + " (from cache)"
             else:
                 # Cache miss - fetch from API
                 config = get_config()
@@ -61,7 +61,7 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         ttl_hours=1
                     )
                     
-                    reply_text = format_schedule_reply(station_id, today, response.schedule)
+                    reply_text = format_schedule_reply(station_id, today, response.schedule) + " (fetched fresh)"
         except Exception as e:
             reply_text = f"Error fetching schedule: {str(e)}"
 
