@@ -11,14 +11,11 @@ RUN apt-get update && apt-get --no-install-recommends install -y apt-transport-h
 WORKDIR /app
 
 COPY requirements.txt ./
-RUN pip install --upgrade --no-cache-dir -r requirements.txt && \
-    groupadd -r appuser && useradd -r -g appuser appuser
+RUN pip install --upgrade --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN chown -R appuser:appuser /app
 
 EXPOSE 8080
-USER appuser
 
 ENTRYPOINT ["doppler", "run", "--"]
 
