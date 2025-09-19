@@ -13,4 +13,3 @@ class TelegramSettings(BaseModel):
         cfg = get_config()
         return cls(token=cfg.telegram_bot_token, enabled=bool(cfg.telegram_bot_token))
 
-__all__ = ["TelegramSettings"]

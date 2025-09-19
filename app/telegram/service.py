@@ -61,5 +61,3 @@ class TelegramBotService:
             await app.stop()
             await app.shutdown()
         logger.info("Telegram bot stopped")
-
-__all__ = ["TelegramBotService", "TelegramSettings"]
