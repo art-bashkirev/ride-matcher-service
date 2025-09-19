@@ -21,9 +21,9 @@ class CachedSchedule(JsonModel):
         database = get_redis_connection(
             host=get_config().redis_host,
             port=get_config().redis_port,
-            db=get_config().redis_db,
+            decode_responses=True,
+            username=get_config().redis_username,
             password=get_config().redis_password,
-            decode_responses=True
         )
 
 

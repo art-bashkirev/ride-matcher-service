@@ -32,7 +32,8 @@ class Config(BaseSettings):
     # Redis configuration for caching
     redis_host: str = Field(default="localhost")
     redis_port: int = Field(default=6379)
-    redis_db: int = Field(default=0)
+    # redis_db: int = Field(default=0)
+    redis_username: str | None = Field(default=None)
     redis_password: str | None = Field(default=None)
     
     @field_validator('result_timezone')
