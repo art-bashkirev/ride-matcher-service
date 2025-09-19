@@ -1,88 +1,159 @@
-"""Cache service using Redis JSON for storing schedule responses."""
+"""Cache service with proper separation of concerns using Redis JSON."""
 
 import json
 from datetime import datetime, timedelta
-from typing import Optional, Any
-from redis_om import JsonModel, Field
-from redis_om import get_redis_connection
+from typing import Optional, Dict, Any, Type, TypeVar, Generic
+import redis
+from pydantic import BaseModel
 
 from config.settings import get_config
 
-
-class CachedSchedule(JsonModel):
-    """Redis JSON model for cached schedule data."""
-    station_id: str = Field(index=True)
-    date: str = Field(index=True)
-    data: str  # JSON string of the schedule response
-    created_at: datetime = Field(default_factory=datetime.now)
-    expires_at: datetime = Field(default_factory=lambda: datetime.now() + timedelta(hours=1))
-
-    class Meta:
-        database = get_redis_connection(
-            host=get_config().redis_host,
-            port=get_config().redis_port,
-            decode_responses=True,
-            username=get_config().redis_username,
-            password=get_config().redis_password,
-        )
+# Type variable for generic BaseModel support
+T = TypeVar('T', bound=BaseModel)
 
 
-class CacheService:
-    """Service for caching schedule responses using Redis JSON."""
+class CacheSerializer(Generic[T]):
+    """Generic helper class for serializing/deserializing any Pydantic BaseModel."""
 
     @staticmethod
-    def _get_cache_key(station_id: str, date: str) -> str:
-        """Generate a unique cache key for the schedule request."""
+    def serialize_model(model: BaseModel) -> str:
+        """Convert any Pydantic BaseModel to JSON string."""
+        return model.model_dump_json()
+
+    @staticmethod
+    def deserialize_model(json_str: str, model_class: Type[T]) -> T:
+        """Convert JSON string back to specified Pydantic model."""
+        data = json.loads(json_str)
+        return model_class(**data)
+
+    @staticmethod
+    def create_cache_metadata(station_id: str, date: str, ttl_hours: int) -> Dict[str, Any]:
+        """Create metadata for cache entry."""
+        return {
+            'station_id': station_id,
+            'date': date,
+            'created_at': datetime.now().isoformat(),
+            'expires_at': (datetime.now() + timedelta(hours=ttl_hours)).isoformat(),
+            'ttl_hours': ttl_hours
+        }
+
+
+class CacheKeyGenerator:
+    """Helper class for generating cache keys."""
+
+    @staticmethod
+    def schedule_key(station_id: str, date: str) -> str:
+        """Generate cache key for schedule data."""
         return f"schedule:{station_id}:{date}"
 
     @staticmethod
-    def get_cached_schedule(station_id: str, date: str) -> Optional[Any]:
-        """Retrieve cached schedule if it exists and hasn't expired."""
-        try:
-            # Find existing cache entry
-            cached = CachedSchedule.find(
-                (CachedSchedule.station_id == station_id) &
-                (CachedSchedule.date == date)
-            ).first_or_none()
+    def metadata_key(station_id: str, date: str) -> str:
+        """Generate cache key for metadata."""
+        return f"metadata:{station_id}:{date}"
 
-            if cached and cached.expires_at > datetime.now():
-                # Return the parsed JSON data
-                return json.loads(cached.data)
-            elif cached:
-                # Cache expired, delete it
-                cached.delete()
+
+class RedisClientManager:
+    """Manager for Redis client connections."""
+
+    _client = None
+
+    @classmethod
+    def get_client(cls) -> redis.Redis:
+        """Get or create Redis client."""
+        if cls._client is None:
+            config = get_config()
+            cls._client = redis.Redis(
+                host=config.redis_host,
+                port=config.redis_port,
+                username=config.redis_username,
+                password=config.redis_password,
+                decode_responses=True
+            )
+        return cls._client
+
+
+class CacheService:
+    """Service for caching responses with clean separation of concerns."""
+
+    @staticmethod
+    def get_cached_model(station_id: str, date: str, model_class: Type[T]) -> Optional[T]:
+        """Generic method to retrieve any cached Pydantic model."""
+        try:
+            client = RedisClientManager.get_client()
+            key = CacheKeyGenerator.schedule_key(station_id, date)
+            meta_key = CacheKeyGenerator.metadata_key(station_id, date)
+
+            # Get both data and metadata
+            cached_json = client.get(key)
+            metadata_json = client.get(meta_key)
+
+            if not cached_json or not metadata_json:
+                return None
+
+            # Check if expired
+            metadata = json.loads(metadata_json)
+            expires_at = datetime.fromisoformat(metadata['expires_at'])
+
+            if datetime.now() > expires_at:
+                # Clean up expired entries
+                client.delete(key, meta_key)
+                return None
+
+            return CacheSerializer.deserialize_model(cached_json, model_class)
 
         except Exception as e:
             print(f"Cache retrieval error: {e}")
-
-        return None
+            return None
 
     @staticmethod
-    def set_cached_schedule(station_id: str, date: str, schedule_data: Any, ttl_hours: int = 1):
-        """Cache the schedule response with TTL."""
+    def set_cached_model(station_id: str, date: str, model: BaseModel, ttl_hours: int = 1):
+        """Generic method to cache any Pydantic model."""
         try:
-            # Convert schedule data to JSON string
-            data_str = json.dumps(schedule_data)
+            client = RedisClientManager.get_client()
+            key = CacheKeyGenerator.schedule_key(station_id, date)
+            meta_key = CacheKeyGenerator.metadata_key(station_id, date)
 
-            # Create or update cache entry
-            cached = CachedSchedule(
-                station_id=station_id,
-                date=date,
-                data=data_str,
-                expires_at=datetime.now() + timedelta(hours=ttl_hours)
-            )
-            cached.save()
+            # Serialize data
+            model_json = CacheSerializer.serialize_model(model)
+            metadata = CacheSerializer.create_cache_metadata(station_id, date, ttl_hours)
+            metadata_json = json.dumps(metadata)
+
+            # Store with TTL
+            ttl_seconds = ttl_hours * 3600
+            client.setex(key, ttl_seconds, model_json)
+            client.setex(meta_key, ttl_seconds, metadata_json)
 
         except Exception as e:
             print(f"Cache storage error: {e}")
 
     @staticmethod
-    def clear_expired_cache():
-        """Remove expired cache entries."""
+    def clear_cache_for_key(key_prefix: str) -> int:
+        """Clear all cache entries with a specific key prefix. Returns number cleared."""
         try:
-            now = datetime.now()
-            expired_entries = CachedSchedule.find(CachedSchedule.expires_at < now)
-            for entry in expired_entries:
-                entry.delete()
+            client = RedisClientManager.get_client()
+            deleted_count = 0
+
+            # Find all metadata keys with prefix
+            pattern = f"metadata:{key_prefix}*"
+            meta_keys = client.keys(pattern)
+
+            for meta_key in meta_keys:
+                try:
+                    metadata_json = client.get(meta_key)
+                    if metadata_json:
+                        metadata = json.loads(metadata_json)
+                        # Extract the full key from metadata
+                        station_id = metadata.get('station_id', '')
+                        date = metadata.get('date', '')
+                        data_key = CacheKeyGenerator.schedule_key(station_id, date)
+
+                        client.delete(data_key, meta_key)
+                        deleted_count += 1
+                except Exception:
+                    continue
+
+            return deleted_count
+
         except Exception as e:
-            print(f"Cache cleanup error: {e}")
+            print(f"Cache clear error: {e}")
+            return 0

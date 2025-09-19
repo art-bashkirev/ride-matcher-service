@@ -5,7 +5,10 @@ from telegram.ext import ContextTypes
 
 from config.settings import get_config
 from services.yandex_schedules.client import YandexSchedules
-from services.yandex_schedules.models.schedule import ScheduleRequest
+from services.yandex_schedules.models.schedule import ScheduleRequest, ScheduleResponse
+from services.cache import CacheService
+from app.telegram.utils import is_valid_station_id, format_schedule_reply
+from services.yandex_schedules.models.schedule import ScheduleRequest, Schedule
 from services.cache import CacheService
 from app.telegram.utils import is_valid_station_id, format_schedule_reply
 
@@ -36,9 +39,9 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         today = datetime.now().date().isoformat()
         try:
             # Check cache first
-            cached_response = CacheService.get_cached_schedule(station_id, today)
+            cached_response = CacheService.get_cached_model(station_id, today, ScheduleResponse)
             if cached_response:
-                reply_text = format_schedule_reply(station_id, today, cached_response['schedule'])
+                reply_text = format_schedule_reply(station_id, today, cached_response.schedule)
             else:
                 # Cache miss - fetch from API
                 config = get_config()
@@ -51,10 +54,10 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     response = await client.get_schedule(schedule_request)
                     
                     # Cache the response
-                    CacheService.set_cached_schedule(
+                    CacheService.set_cached_model(
                         station_id, 
                         today, 
-                        response.model_dump(),  # Convert to dict for JSON storage
+                        response,
                         ttl_hours=1
                     )
                     
