@@ -1,0 +1,18 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore environment files and secrets
+.env
+*.env
+secrets/
+*.pem
+*.key
+
+# Ignore VCS and editor files
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
