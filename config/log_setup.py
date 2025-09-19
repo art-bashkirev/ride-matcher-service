@@ -22,6 +22,10 @@ def _configure_root_once():
     if not root.handlers:
         root.addHandler(handler)
     root.setLevel(level)
+    
+    # Suppress httpx logging
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    
     _configure_root_once._configured = True  # type: ignore[attr-defined]
 
 
