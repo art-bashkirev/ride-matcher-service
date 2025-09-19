@@ -29,10 +29,8 @@ class Config(BaseSettings):
     # Telegram bot
     telegram_bot_token: str | None = Field(default=None)
 
-    # Database Configuration
-    redis_uri: str | None = Field(default=None)
-    mongodb_uri: str | None = Field(default=None)
-    postgresql_uri: str | None = Field(default=None)
+    # Telegram bot
+    telegram_bot_token: str | None = Field(default=None)
     
     @field_validator('result_timezone')
     def validate_timezone(cls, v):
