@@ -20,6 +20,9 @@ Available commands (placeholder implementations):
 /help - Show this help message
 /schedule <station_id> - Get station schedule (placeholder)
 /search <from> <to> [date] - Search routes (placeholder)
+/thread <thread_uid> - Get thread information (placeholder)
+/carrier <carrier_code> - Get carrier information (placeholder)  
+/copyright - Show copyright and attribution info (placeholder)
 
 This is a placeholder bot implementation. Commands will echo back with confirmation.
 """
