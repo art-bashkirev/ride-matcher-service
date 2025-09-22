@@ -6,7 +6,7 @@ from typing import Optional
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from .config import TelegramSettings
-from .handlers.commands import cmd_start, cmd_help, echo_text
+from .handlers.commands import cmd_start, cmd_help, cmd_schedule, echo_text
 from config.log_setup import get_logger
 
 logger = get_logger(__name__)
@@ -24,6 +24,7 @@ class TelegramBotService:
         app = Application.builder().token(self.settings.token).build()
         app.add_handler(CommandHandler("start", cmd_start))
         app.add_handler(CommandHandler("help", cmd_help))
+        app.add_handler(CommandHandler("schedule", cmd_schedule))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_text))
         return app
 
