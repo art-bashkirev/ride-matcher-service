@@ -3,10 +3,10 @@ import asyncio
 from contextlib import suppress
 from typing import Optional
 
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import Application
 
 from .config import TelegramSettings
-from .handlers.commands import cmd_start, cmd_help, cmd_schedule, echo_text
+from .handlers.registry import HandlerRegistry
 from config.log_setup import get_logger
 
 logger = get_logger(__name__)
@@ -22,10 +22,11 @@ class TelegramBotService:
         if not self.settings.token:
             return None
         app = Application.builder().token(self.settings.token).build()
-        app.add_handler(CommandHandler("start", cmd_start))
-        app.add_handler(CommandHandler("help", cmd_help))
-        app.add_handler(CommandHandler("schedule", cmd_schedule))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_text))
+        
+        # Register all handlers through the registry
+        registry = HandlerRegistry()
+        registry.register_all(app)
+        
         return app
 
     @property
