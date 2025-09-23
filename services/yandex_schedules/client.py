@@ -8,6 +8,7 @@ from .models.carrier import Carrier, CarrierRequest
 from .models.copyright import CopyrightRequest, CopyrightResponse
 from .models.search import SearchRequest, SearchResponse
 from .models.schedule import ScheduleRequest, ScheduleResponse
+from .models.stations_list import StationsListRequest, StationsListResponse
 from .models.thread import ThreadRequest, ThreadResponse
 
 
@@ -21,17 +22,25 @@ class YandexSchedules:
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self._session: aiohttp.ClientSession | None = None
 
+    async def start(self):
+        if not self._session or self._session.closed:
+            self._session = aiohttp.ClientSession(base_url=self.BASE_URL, timeout=self.timeout)
+
+    async def close(self):
+        if self._session and not self._session.closed:
+            await self._session.close()
+
     async def __aenter__(self):
-        self._session = aiohttp.ClientSession(base_url=self.BASE_URL, timeout=self.timeout)
+        await self.start()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self._session:
-            await self._session.close()
+        await self.close()
 
     async def _get(self, endpoint: str, **params) -> dict:
+        await self.start()
         if not self._session:
-            raise RuntimeError("Client session not initialized. Use 'async with YandexSchedules()'.")
+            raise RuntimeError("Client session not initialized and could not be started.")
         params["apikey"] = self.api_key
         # Convert all params to strings for yarl compatibility
         params = {k: str(v) for k, v in params.items()}
@@ -87,12 +96,12 @@ class YandexSchedules:
         data = await self._get("thread", **params)
         return ThreadResponse(**data)
 
-    # async def get_stations_list(self, req: StationsListRequest | None = None) -> StationsListResponse:
-    #     """
-    #     Retrieves the complete list of stations.
-    #
-    #     This endpoint returns a large dataset and is not intended for frequent use.
-    #     """
-    #     endpoint = "stations_list"
-    #     data = await self._get(endpoint)
-    #     return StationsListResponse(**data)
+    async def get_stations_list(self, req: StationsListRequest | None = None) -> StationsListResponse:
+        """
+        Retrieves the complete list of stations. Warning: returns text/html with JSON body.
+
+        This endpoint returns a large dataset and is not intended for frequent use.
+        """
+        params = req.model_dump(mode='json', exclude_none=True, by_alias=True) if req else {}
+        data = await self._get("stations_list", **params)
+        return StationsListResponse(**data)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from .common import TransportType, SearchCodes, StationType
 
@@ -6,14 +6,21 @@ from .common import TransportType, SearchCodes, StationType
 class StationsListRequest(BaseModel):
     pass
 
+
 class Station(BaseModel):
-    direction: str | None
+    direction: str | None = None
     codes: SearchCodes
-    station_type: StationType
+    station_type: StationType | None
     title: str
-    longitude: float
-    latitude: float
+    longitude: float | str | None = None
+    latitude: float | str | None = None
     transport_type: TransportType
+
+    @field_validator("station_type", mode="before")
+    def empty_str_to_unknown(cls, v):
+        if v == "":
+            return "unknown"
+        return v
 
 
 class Settlement(BaseModel):
@@ -28,11 +35,11 @@ class Region(BaseModel):
     title: str
 
 
-class Countries(BaseModel):
+class Country(BaseModel):
     regions: list[Region]
     codes: SearchCodes
     title: str
 
 
 class StationsListResponse(BaseModel):
-    countries: Countries
+    countries: list[Country]

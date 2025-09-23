@@ -9,8 +9,8 @@ class Interval(BaseModel):
 
 
 class SearchCodes(BaseModel):
-    yandex_code: str | None
-    esr_code: str | None
+    yandex_code: str | None = None
+    esr_code: str | None = None
 
 
 class Pagination(BaseModel):
@@ -51,6 +51,8 @@ class TransportType(Enum):
     BUS = "bus"
     WATER = "water"
     HELICOPTER = "helicopter"
+    # UNDOCUMENTED SHIT ---
+    SEA = "sea"
 
 
 class StationType(Enum):
