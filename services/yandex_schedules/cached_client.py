@@ -76,14 +76,22 @@ class CachedYandexSchedules:
         # Cache miss, fetch from API
         logger.info("Cache miss, fetching schedule from API for station %s", req.station)
         
-        response = await self.client.get_schedule(req)
+        try:
+            response = await self.client.get_schedule(req)
+        except Exception as e:
+            logger.error("Failed to fetch schedule from API for station %s: %s", req.station, e)
+            # Re-raise the exception to be handled by the caller
+            raise
         
-        # Cache the response
-        cache_success = await self.cache.set_schedule_results(req, response)
-        if cache_success:
-            logger.debug("Successfully cached schedule for station %s", req.station)
+        # Cache the response only if it's valid
+        if response and response.schedule:
+            cache_success = await self.cache.set_schedule_results(req, response)
+            if cache_success:
+                logger.debug("Successfully cached schedule for station %s", req.station)
+            else:
+                logger.warning("Failed to cache schedule for station %s", req.station)
         else:
-            logger.warning("Failed to cache schedule for station %s", req.station)
+            logger.info("Not caching empty schedule response for station %s", req.station)
         
         return response
     

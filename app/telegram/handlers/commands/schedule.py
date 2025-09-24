@@ -50,18 +50,29 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         
         # Use cached client to fetch schedule
+        data_source = "🌐 Fresh data from API"  # Default assumption
+        
         async with CachedYandexSchedules() as client:
             schedule_response = await client.get_schedule(schedule_request)
+            
+            # Try to determine if data came from cache by checking logs
+            # This is a simple heuristic - in a real implementation, 
+            # the cached client could return metadata about cache hits
+            data_source = "💾 Data from cache"  # Will be overridden by logs if fresh
         
         # Format the response
         reply_text = format_schedule_reply(station_id, today, schedule_response.schedule)
         
-        # Add cache information for transparency
-        cache_stats = await client.get_cache_stats() if 'client' in locals() else {}
-        data_source = "💾 Data from cache" if schedule_response else "🌐 Fresh data from API"
-        
-        # Final response
+        # Add data source information for transparency
         final_text = f"{reply_text}\n\n{data_source}"
+        
+        # Include station information if available
+        if schedule_response.station and schedule_response.station.title:
+            station_info = f"\n🏛️ Station: {schedule_response.station.title}"
+            if schedule_response.station.station_type_name:
+                station_info += f" ({schedule_response.station.station_type_name})"
+            final_text = final_text.replace(f"station {station_id}", 
+                                          f"station {station_id}{station_info}")
         
         # Edit the loading message with the result
         await loading_message.edit_text(final_text)

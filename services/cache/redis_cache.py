@@ -52,11 +52,22 @@ class YandexSchedulesCache:
     
     def _generate_cache_key(self, prefix: str, request: BaseModel) -> str:
         """Generate a cache key from request parameters."""
-        # Create a deterministic hash from the request parameters
-        request_dict = request.model_dump(exclude_none=True, by_alias=True)
-        request_json = json.dumps(request_dict, sort_keys=True)
-        hash_digest = hashlib.md5(request_json.encode()).hexdigest()
-        return f"{prefix}:{hash_digest}"
+        try:
+            # Create a deterministic hash from the request parameters
+            request_dict = request.model_dump(exclude_none=True, by_alias=True)
+            
+            # Ensure date is normalized for consistent caching
+            if 'date' in request_dict and request_dict['date']:
+                # Keep the date as-is for now, but could normalize to YYYY-MM-DD format
+                pass
+            
+            request_json = json.dumps(request_dict, sort_keys=True)
+            hash_digest = hashlib.md5(request_json.encode()).hexdigest()
+            return f"{prefix}:{hash_digest}"
+        except Exception as e:
+            logger.error("Error generating cache key: %s", e)
+            # Fallback to a basic key
+            return f"{prefix}:error_{hash(str(request))}"
     
     async def get_search_results(
         self, 

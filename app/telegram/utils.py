@@ -47,10 +47,20 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) 
         # Get thread information
         thread_info = "Unknown"
         if schedule_item.thread:
-            thread_info = schedule_item.thread.title or schedule_item.thread.number or "Unknown"
-            # Limit thread info length
-            if len(thread_info) > 30:
-                thread_info = thread_info[:27] + "..."
+            # Prefer number over title for trains, but show title for others
+            if schedule_item.thread.number:
+                thread_info = f"{schedule_item.thread.number}"
+                if schedule_item.thread.title:
+                    # Add abbreviated title
+                    title = schedule_item.thread.title
+                    if len(title) > 25:
+                        title = title[:22] + "..."
+                    thread_info += f" ({title})"
+            else:
+                thread_info = schedule_item.thread.title or "Unknown"
+                # Limit thread info length
+                if len(thread_info) > 30:
+                    thread_info = thread_info[:27] + "..."
         
         # Format platform information
         platform_info = ""
