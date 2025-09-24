@@ -40,6 +40,7 @@ class Config(BaseSettings):
     # Cache configuration
     cache_ttl_search: int = Field(default=3600)  # 1 hour for search results
     cache_ttl_schedule: int = Field(default=1800)  # 30 minutes for schedule results
+    cache_readable_keys: bool = Field(default=False)  # Use readable keys instead of hashes
     
     @field_validator('result_timezone')
     def validate_timezone(cls, v):

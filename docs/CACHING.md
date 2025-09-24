@@ -42,6 +42,9 @@ REDIS_PASSWORD=  # optional
 # Cache TTL Settings
 CACHE_TTL_SEARCH=3600    # 1 hour for search results
 CACHE_TTL_SCHEDULE=1800  # 30 minutes for schedule results
+
+# Cache Key Strategy
+CACHE_READABLE_KEYS=false  # Use hashed keys (default) or true for readable keys
 ```
 
 ## Usage
@@ -79,10 +82,51 @@ The bot will indicate whether data came from cache or fresh API call.
 
 ## Cache Keys
 
-Cache keys are generated using MD5 hashes of request parameters:
+The cache supports two key generation strategies, configurable via `CACHE_READABLE_KEYS`:
 
-- **Schedule**: `schedule:<md5(request_params)>`
-- **Search**: `search:<md5(request_params)>`
+### Hashed Keys (Default)
+```bash
+CACHE_READABLE_KEYS=false
+```
+
+Uses MD5 hashes for compact, collision-resistant keys:
+- **Schedule**: `schedule:d42a333c616e1b8c270c8ca2c3117087`
+- **Search**: `search:40cc92d197a76af404e57920eb8b7b13`
+
+**Pros:**
+- Compact and fixed length (32-character hash)
+- No character escaping needed
+- Collision resistant
+- Better performance with many keys
+
+**Cons:**
+- Not human readable
+- Hard to debug and monitor
+
+### Readable Keys
+```bash
+CACHE_READABLE_KEYS=true
+```
+
+Uses human-readable keys with parameter values:
+- **Schedule**: `schedule:station_s9600213:date_2024-09-24:tz_Europe_Moscow:limit_20`
+- **Search**: `search:from_s9600213:to_s9600366:date_2024-09-24:tz_Europe_Moscow:limit_50:offset_10`
+
+**Pros:**
+- Human readable and debuggable
+- Easy to understand in Redis CLI
+- Can filter by patterns (e.g., `schedule:station_s9600213:*`)
+- Great for development and troubleshooting
+
+**Cons:**
+- Longer keys use more memory
+- Need character sanitization for special chars
+- Variable length
+
+### Recommendation
+
+- **Production**: Use hashed keys (default) for better performance and memory usage
+- **Development**: Use readable keys for easier debugging and monitoring
 
 ## Monitoring
 

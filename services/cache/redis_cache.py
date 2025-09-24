@@ -53,21 +53,72 @@ class YandexSchedulesCache:
     def _generate_cache_key(self, prefix: str, request: BaseModel) -> str:
         """Generate a cache key from request parameters."""
         try:
-            # Create a deterministic hash from the request parameters
-            request_dict = request.model_dump(exclude_none=True, by_alias=True)
-            
-            # Ensure date is normalized for consistent caching
-            if 'date' in request_dict and request_dict['date']:
-                # Keep the date as-is for now, but could normalize to YYYY-MM-DD format
-                pass
-            
-            request_json = json.dumps(request_dict, sort_keys=True)
-            hash_digest = hashlib.md5(request_json.encode()).hexdigest()
-            return f"{prefix}:{hash_digest}"
+            if self.config.cache_readable_keys:
+                return self._generate_readable_cache_key(prefix, request)
+            else:
+                return self._generate_hashed_cache_key(prefix, request)
         except Exception as e:
             logger.error("Error generating cache key: %s", e)
             # Fallback to a basic key
             return f"{prefix}:error_{hash(str(request))}"
+    
+    def _generate_hashed_cache_key(self, prefix: str, request: BaseModel) -> str:
+        """Generate a hashed cache key (compact, collision-resistant)."""
+        # Create a deterministic hash from the request parameters
+        request_dict = request.model_dump(exclude_none=True, by_alias=True)
+        
+        # Ensure date is normalized for consistent caching
+        if 'date' in request_dict and request_dict['date']:
+            # Keep the date as-is for now, but could normalize to YYYY-MM-DD format
+            pass
+        
+        request_json = json.dumps(request_dict, sort_keys=True)
+        hash_digest = hashlib.md5(request_json.encode()).hexdigest()
+        return f"{prefix}:{hash_digest}"
+    
+    def _generate_readable_cache_key(self, prefix: str, request: BaseModel) -> str:
+        """Generate a human-readable cache key (easier to debug, potentially longer)."""
+        request_dict = request.model_dump(exclude_none=True, by_alias=True)
+        
+        # Build readable key parts
+        key_parts = [prefix]
+        
+        # Add station if present
+        if 'station' in request_dict:
+            key_parts.append(f"station_{request_dict['station']}")
+        
+        # Add from/to if present (for search requests)
+        if 'from' in request_dict:
+            key_parts.append(f"from_{request_dict['from']}")
+        if 'to' in request_dict:
+            key_parts.append(f"to_{request_dict['to']}")
+        
+        # Add date if present
+        if 'date' in request_dict and request_dict['date']:
+            key_parts.append(f"date_{request_dict['date']}")
+        
+        # Add timezone if present (sanitize special characters)
+        if 'result_timezone' in request_dict:
+            tz = request_dict['result_timezone'].replace('/', '_').replace(' ', '_')
+            key_parts.append(f"tz_{tz}")
+        
+        # Add limit if different from default
+        if 'limit' in request_dict and request_dict['limit'] != 100:
+            key_parts.append(f"limit_{request_dict['limit']}")
+        
+        # Add offset if non-zero
+        if 'offset' in request_dict and request_dict['offset'] != 0:
+            key_parts.append(f"offset_{request_dict['offset']}")
+        
+        # Add other significant parameters
+        for key, value in request_dict.items():
+            if key not in ['station', 'from', 'to', 'date', 'result_timezone', 'limit', 'offset']:
+                if value is not None:
+                    # Sanitize the value for Redis key safety
+                    sanitized_value = str(value).replace('/', '_').replace(' ', '_').replace(':', '_')
+                    key_parts.append(f"{key}_{sanitized_value}")
+        
+        return ':'.join(key_parts)
     
     async def get_search_results(
         self, 
