@@ -15,7 +15,7 @@ def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[
         current_time: Current time (defaults to now in UTC)
     
     Returns:
-        List of upcoming schedule items, limited to next 20 for display
+        List of upcoming schedule items (not limited here, display limiting handled by caller)
     """
     if not schedule:
         return []
@@ -37,8 +37,9 @@ def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[
                 # If we can't parse the time, include it to be safe
                 upcoming.append(item)
     
-    # Limit to 20 for telegram display
-    return upcoming[:20]
+    # Return all upcoming departures without artificial limit
+    # Display limiting is handled by the caller (format_schedule_reply)
+    return upcoming
 
 def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) -> str:
     """Format schedule data for telegram response."""
