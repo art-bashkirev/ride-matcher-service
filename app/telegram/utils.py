@@ -1,11 +1,44 @@
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from services.yandex_schedules.models.schedule import Schedule
 
 def is_valid_station_id(text: str) -> bool:
     """Validate message format: s followed by exactly 7 digits."""
     return bool(re.match(r'^s\d{7}$', text))
+
+def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[datetime] = None) -> List[Schedule]:
+    """Filter schedule to show only upcoming departures.
+    
+    Args:
+        schedule: List of schedule items
+        current_time: Current time (defaults to now in UTC)
+    
+    Returns:
+        List of upcoming schedule items, limited to next 20 for display
+    """
+    if not schedule:
+        return []
+    
+    if current_time is None:
+        current_time = datetime.now(timezone.utc)
+    
+    upcoming = []
+    for item in schedule:
+        if item.departure:
+            try:
+                # Parse ISO 8601 datetime with timezone
+                departure_dt = datetime.fromisoformat(item.departure.replace('Z', '+00:00'))
+                
+                # Compare with current time
+                if departure_dt > current_time:
+                    upcoming.append(item)
+            except (ValueError, AttributeError):
+                # If we can't parse the time, include it to be safe
+                upcoming.append(item)
+    
+    # Limit to 20 for telegram display
+    return upcoming[:20]
 
 def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) -> str:
     """Format schedule data for telegram response."""

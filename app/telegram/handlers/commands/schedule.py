@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 from datetime import datetime
 from config.log_setup import get_logger
 from config.settings import get_config
-from app.telegram.utils import is_valid_station_id, format_schedule_reply
+from app.telegram.utils import is_valid_station_id, format_schedule_reply, filter_upcoming_departures
 from services.yandex_schedules.cached_client import CachedYandexSchedules
 from services.yandex_schedules.models.schedule import ScheduleRequest
 
@@ -40,28 +40,27 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         config = get_config()
         
-        # Create schedule request
+        # Create schedule request - fetch many trains to cache and filter
         today = datetime.now(config.timezone).strftime('%Y-%m-%d')
         schedule_request = ScheduleRequest(
             station=station_id,
             date=today,
             result_timezone=config.result_timezone,
-            limit=20  # Limit to 20 departures to keep response manageable
+            limit=500  # Fetch many trains to cache properly and filter current ones
         )
         
         # Use cached client to fetch schedule
-        data_source = "🌐 Fresh data from API"  # Default assumption
-        
         async with CachedYandexSchedules() as client:
-            schedule_response = await client.get_schedule(schedule_request)
+            schedule_response, was_cached = await client.get_schedule(schedule_request)
             
-            # Try to determine if data came from cache by checking logs
-            # This is a simple heuristic - in a real implementation, 
-            # the cached client could return metadata about cache hits
-            data_source = "💾 Data from cache"  # Will be overridden by logs if fresh
+            # Set data source based on actual cache hit
+            data_source = "💾 Data from cache" if was_cached else "🌐 Fresh data from API"
+        
+        # Filter to show only upcoming departures from the large cached set
+        filtered_schedule = filter_upcoming_departures(schedule_response.schedule)
         
         # Format the response
-        reply_text = format_schedule_reply(station_id, today, schedule_response.schedule)
+        reply_text = format_schedule_reply(station_id, today, filtered_schedule)
         
         # Add data source information for transparency
         final_text = f"{reply_text}\n\n{data_source}"
