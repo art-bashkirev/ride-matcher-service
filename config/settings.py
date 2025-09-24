@@ -33,9 +33,14 @@ class Config(BaseSettings):
     # Redis configuration for caching
     redis_host: str = Field(default="localhost")
     redis_port: int = Field(default=6379)
-    # redis_db: int = Field(default=0)
+    redis_db: int = Field(default=0)
     redis_username: str | None = Field(default=None)
     redis_password: str | None = Field(default=None)
+    
+    # Cache configuration
+    cache_ttl_search: int = Field(default=3600)  # 1 hour for search results
+    cache_ttl_schedule: int = Field(default=1800)  # 30 minutes for schedule results
+    cache_readable_keys: bool = Field(default=False)  # Use readable keys instead of hashes
     
     @field_validator('result_timezone')
     def validate_timezone(cls, v):
