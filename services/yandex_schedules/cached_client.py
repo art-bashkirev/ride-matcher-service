@@ -37,15 +37,19 @@ class CachedYandexSchedules:
         """Async context manager exit."""
         await self.close()
     
-    async def get_search_results(self, req: SearchRequest) -> SearchResponse:
-        """Get search results with caching."""
+    async def get_search_results(self, req: SearchRequest) -> tuple[SearchResponse, bool]:
+        """Get search results with caching.
+        
+        Returns:
+            tuple: (SearchResponse, was_cached: bool)
+        """
         # Try cache first
         cached_response = await self.cache.get_search_results(req)
         
         if cached_response:
             logger.info("Search results served from cache for route %s -> %s", 
                        req.from_, req.to)
-            return cached_response
+            return cached_response, True
         
         # Cache miss, fetch from API
         logger.info("Cache miss, fetching search results from API for route %s -> %s", 
@@ -62,16 +66,20 @@ class CachedYandexSchedules:
             logger.warning("Failed to cache search results for route %s -> %s", 
                           req.from_, req.to)
         
-        return response
+        return response, False
     
-    async def get_schedule(self, req: ScheduleRequest) -> ScheduleResponse:
-        """Get schedule results with caching."""
+    async def get_schedule(self, req: ScheduleRequest) -> tuple[ScheduleResponse, bool]:
+        """Get schedule results with caching.
+        
+        Returns:
+            tuple: (ScheduleResponse, was_cached: bool)
+        """
         # Try cache first
         cached_response = await self.cache.get_schedule_results(req)
         
         if cached_response:
             logger.info("Schedule results served from cache for station %s", req.station)
-            return cached_response
+            return cached_response, True
         
         # Cache miss, fetch from API
         logger.info("Cache miss, fetching schedule from API for station %s", req.station)
@@ -93,7 +101,7 @@ class CachedYandexSchedules:
         else:
             logger.info("Not caching empty schedule response for station %s", req.station)
         
-        return response
+        return response, False
     
     # Pass-through methods for other API calls (no caching needed for these)
     async def get_copyright(self):

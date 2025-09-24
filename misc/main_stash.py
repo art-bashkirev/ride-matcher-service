@@ -103,7 +103,8 @@ async def fetch_and_cache_schedules(client: YandexSchedules, intents: List[UserI
             result_timezone=RESULT_TIMEZONE_STR,
             limit=300 # Get all trains for the day
         )
-        cached_schedules[route_key] = await client.get_search_results(request)
+        search_result, was_cached = await client.get_search_results(request)
+        cached_schedules[route_key] = search_result
     
     print("--- Cache fetch complete. ---\n")
     return cached_schedules
