@@ -59,23 +59,33 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) 
     
     # Show up to 10 departures to keep response manageable
     for i, schedule_item in enumerate(schedule[:10]):
-        departure_time = "N/A"
-        arrival_time = ""
-        
-        if schedule_item.departure:
+        # Format time information for this station
+        time_info = ""
+        if schedule_item.arrival and schedule_item.departure:
             try:
-                # Parse ISO datetime and format to time only
+                arrival_dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
+                departure_dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
+                arrival_time = arrival_dt.strftime('%H:%M')
+                departure_time = departure_dt.strftime('%H:%M')
+                time_info = f"Arrives: {arrival_time}, Departs: {departure_time}"
+            except (ValueError, AttributeError):
+                time_info = f"Arrives: {schedule_item.arrival}, Departs: {schedule_item.departure}"
+        elif schedule_item.departure:
+            try:
                 dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
                 departure_time = dt.strftime('%H:%M')
+                time_info = f"Departs: {departure_time}"
             except (ValueError, AttributeError):
-                departure_time = schedule_item.departure
-        
-        if schedule_item.arrival:
+                time_info = f"Departs: {schedule_item.departure}"
+        elif schedule_item.arrival:
             try:
                 dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
-                arrival_time = f" → {dt.strftime('%H:%M')}"
+                arrival_time = dt.strftime('%H:%M')
+                time_info = f"Arrives: {arrival_time}"
             except (ValueError, AttributeError):
-                arrival_time = f" → {schedule_item.arrival}"
+                time_info = f"Arrives: {schedule_item.arrival}"
+        else:
+            time_info = "N/A"
         
         # Get thread information
         thread_info = "Unknown"
@@ -84,16 +94,10 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) 
             if schedule_item.thread.number:
                 thread_info = f"{schedule_item.thread.number}"
                 if schedule_item.thread.title:
-                    # Add abbreviated title
-                    title = schedule_item.thread.title
-                    if len(title) > 25:
-                        title = title[:22] + "..."
-                    thread_info += f" ({title})"
+                    # Add full title without shortening
+                    thread_info += f" ({schedule_item.thread.title})"
             else:
                 thread_info = schedule_item.thread.title or "Unknown"
-                # Limit thread info length
-                if len(thread_info) > 30:
-                    thread_info = thread_info[:27] + "..."
         
         # Format platform information
         platform_info = ""
@@ -101,7 +105,7 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) 
             platform_info = f" (Platform {schedule_item.platform})"
         
         reply_text += f"🚂 {thread_info}\n"
-        reply_text += f"🕒 {departure_time}{arrival_time}{platform_info}\n"
+        reply_text += f"🕒 {time_info}{platform_info}\n"
         
         # Add stops information if available and not too long
         if schedule_item.stops and len(schedule_item.stops) < 50:
