@@ -1,0 +1,214 @@
+"""Redis-based caching layer for Yandex Schedules API responses."""
+
+import json
+import hashlib
+from typing import Any, Optional, Type, TypeVar, Union
+from datetime import datetime, timedelta
+
+from redis import Redis
+from redis.exceptions import RedisError
+from pydantic import BaseModel
+
+from config.settings import get_config
+from config.log_setup import get_logger
+from services.yandex_schedules.models.search import SearchRequest, SearchResponse
+from services.yandex_schedules.models.schedule import ScheduleRequest, ScheduleResponse
+
+logger = get_logger(__name__)
+
+T = TypeVar('T', bound=BaseModel)
+
+
+class YandexSchedulesCache:
+    """Redis cache manager for Yandex Schedules API responses."""
+    
+    def __init__(self):
+        """Initialize Redis connection."""
+        self.config = get_config()
+        self._redis: Optional[Redis] = None
+        
+    def _get_redis(self) -> Redis:
+        """Get or create Redis connection."""
+        if self._redis is None:
+            try:
+                self._redis = Redis(
+                    host=self.config.redis_host,
+                    port=self.config.redis_port,
+                    db=self.config.redis_db,
+                    username=self.config.redis_username,
+                    password=self.config.redis_password,
+                    decode_responses=True,
+                    socket_timeout=10,
+                    socket_connect_timeout=10,
+                    health_check_interval=30
+                )
+                # Test connection
+                self._redis.ping()
+                logger.info("Redis connection established successfully")
+            except RedisError as e:
+                logger.error("Failed to connect to Redis: %s", e)
+                raise
+        return self._redis
+    
+    def _generate_cache_key(self, prefix: str, request: BaseModel) -> str:
+        """Generate a cache key from request parameters."""
+        # Create a deterministic hash from the request parameters
+        request_dict = request.model_dump(exclude_none=True, by_alias=True)
+        request_json = json.dumps(request_dict, sort_keys=True)
+        hash_digest = hashlib.md5(request_json.encode()).hexdigest()
+        return f"{prefix}:{hash_digest}"
+    
+    async def get_search_results(
+        self, 
+        request: SearchRequest, 
+        response_type: Type[T] = SearchResponse
+    ) -> Optional[T]:
+        """Get cached search results."""
+        cache_key = self._generate_cache_key("search", request)
+        return await self._get_cached_response(cache_key, response_type)
+    
+    async def set_search_results(
+        self, 
+        request: SearchRequest, 
+        response: SearchResponse
+    ) -> bool:
+        """Cache search results."""
+        cache_key = self._generate_cache_key("search", request)
+        ttl = self.config.cache_ttl_search
+        return await self._set_cached_response(cache_key, response, ttl)
+    
+    async def get_schedule_results(
+        self, 
+        request: ScheduleRequest, 
+        response_type: Type[T] = ScheduleResponse
+    ) -> Optional[T]:
+        """Get cached schedule results."""
+        cache_key = self._generate_cache_key("schedule", request)
+        return await self._get_cached_response(cache_key, response_type)
+    
+    async def set_schedule_results(
+        self, 
+        request: ScheduleRequest, 
+        response: ScheduleResponse
+    ) -> bool:
+        """Cache schedule results."""
+        cache_key = self._generate_cache_key("schedule", request)
+        ttl = self.config.cache_ttl_schedule
+        return await self._set_cached_response(cache_key, response, ttl)
+    
+    async def _get_cached_response(
+        self, 
+        cache_key: str, 
+        response_type: Type[T]
+    ) -> Optional[T]:
+        """Get cached response from Redis."""
+        try:
+            redis_client = self._get_redis()
+            cached_data = redis_client.get(cache_key)
+            
+            if cached_data is None:
+                logger.debug("Cache miss for key: %s", cache_key)
+                return None
+            
+            logger.debug("Cache hit for key: %s", cache_key)
+            response_dict = json.loads(cached_data)
+            return response_type(**response_dict)
+            
+        except RedisError as e:
+            logger.error("Redis error when getting cache key %s: %s", cache_key, e)
+            return None
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error("Error deserializing cached data for key %s: %s", cache_key, e)
+            # Remove corrupted cache entry
+            try:
+                redis_client = self._get_redis()
+                redis_client.delete(cache_key)
+            except RedisError:
+                pass
+            return None
+    
+    async def _set_cached_response(
+        self, 
+        cache_key: str, 
+        response: BaseModel, 
+        ttl: int
+    ) -> bool:
+        """Set cached response in Redis with TTL."""
+        try:
+            redis_client = self._get_redis()
+            response_json = response.model_dump_json(by_alias=True)
+            
+            # Set with TTL using Redis built-in expiration
+            result = redis_client.setex(cache_key, ttl, response_json)
+            
+            if result:
+                logger.debug("Cached response for key: %s (TTL: %ds)", cache_key, ttl)
+            else:
+                logger.warning("Failed to cache response for key: %s", cache_key)
+            
+            return bool(result)
+            
+        except RedisError as e:
+            logger.error("Redis error when setting cache key %s: %s", cache_key, e)
+            return False
+        except Exception as e:
+            logger.error("Unexpected error when caching key %s: %s", cache_key, e)
+            return False
+    
+    async def clear_cache(self, pattern: str = "*") -> int:
+        """Clear cache entries matching pattern."""
+        try:
+            redis_client = self._get_redis()
+            keys = redis_client.keys(pattern)
+            if keys:
+                deleted = redis_client.delete(*keys)
+                logger.info("Cleared %d cache entries matching pattern: %s", deleted, pattern)
+                return deleted
+            return 0
+        except RedisError as e:
+            logger.error("Redis error when clearing cache: %s", e)
+            return 0
+    
+    async def get_cache_stats(self) -> dict:
+        """Get cache statistics."""
+        try:
+            redis_client = self._get_redis()
+            info = redis_client.info()
+            
+            # Count keys by prefix
+            search_keys = len(redis_client.keys("search:*"))
+            schedule_keys = len(redis_client.keys("schedule:*"))
+            
+            return {
+                "total_keys": info.get("db0", {}).get("keys", 0) if "db0" in info else 0,
+                "search_keys": search_keys,
+                "schedule_keys": schedule_keys,
+                "memory_usage": info.get("used_memory_human", "N/A"),
+                "connected_clients": info.get("connected_clients", 0),
+                "redis_version": info.get("redis_version", "unknown")
+            }
+        except RedisError as e:
+            logger.error("Redis error when getting stats: %s", e)
+            return {"error": str(e)}
+    
+    def close(self):
+        """Close Redis connection."""
+        if self._redis:
+            try:
+                self._redis.close()
+                logger.info("Redis connection closed")
+            except RedisError as e:
+                logger.error("Error closing Redis connection: %s", e)
+            self._redis = None
+
+
+# Global cache instance
+_cache_instance: Optional[YandexSchedulesCache] = None
+
+
+def get_cache() -> YandexSchedulesCache:
+    """Get or create the global cache instance."""
+    global _cache_instance
+    if _cache_instance is None:
+        _cache_instance = YandexSchedulesCache()
+    return _cache_instance
