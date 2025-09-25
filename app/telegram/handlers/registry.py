@@ -7,7 +7,7 @@ from typing import List
 
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
-from app.telegram.handlers.callbacks import handle_schedule_pagination, handle_noop_callback
+from app.telegram.handlers.callbacks import handle_schedule_pagination, handle_noop_callback, handle_schedule_from_search
 from app.telegram.handlers.commands.echo_text import function as echo_text
 
 
@@ -23,6 +23,7 @@ class HandlerRegistry:
         # Callback query handlers for inline keyboards  
         self._callback_handlers: List[tuple] = [
             ("schedule_page:", handle_schedule_pagination),
+            ("schedule_s", handle_schedule_from_search),  # Matches "schedule_s1234567"
             ("noop", handle_noop_callback),
         ]
 

@@ -317,11 +317,19 @@ class YandexSchedulesCache:
             return {"error": str(e)}
 
     def close(self):
-        """Reset Redis connection instance without closing the actual connection."""
-        logger.info("close called for Redis connection instance")
-        if self._redis:
-            logger.info("Redis connection exists (close called) (connection not closed)")
-            # self._redis = None
+        """Close method for cached client compatibility.
+        
+        Since cache is a global singleton, we don't actually close the connection.
+        Redis connections are managed globally and closed when the application shuts down.
+        """
+        logger.debug("close called on cache instance (no-op for global singleton)")
+
+    async def shutdown(self):
+        """Properly close Redis connection on application shutdown."""
+        if self._redis and not self._redis.connection_pool.connection_kwargs.get('closed', False):
+            await self._redis.aclose()
+            self._redis = None
+            logger.info("Redis connection closed gracefully")
 
 
 # Global cache instance
