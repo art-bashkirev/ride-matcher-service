@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from services.yandex_schedules.models.schedule import Schedule
 
 def is_valid_station_id(text: str) -> bool:
@@ -41,7 +42,7 @@ def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[
     # Display limiting is handled by the caller (format_schedule_reply)
     return upcoming
 
-def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) -> str:
+def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], current_page: int = 1, total_pages: int = 1) -> str:
     """Format schedule data for telegram response."""
     if not schedule:
         return f"📅 No departures found for station {station_id} on {date}"
@@ -56,10 +57,12 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) 
         if len(parts) >= 2:
             station_name = f" ({parts[0]})"
     
-    reply_text = f"📅 Schedule for station {station_id}{station_name} on {date}:\n\n"
+    # Add pagination info to header if multiple pages
+    page_info = f" (Page {current_page}/{total_pages})" if total_pages > 1 else ""
+    reply_text = f"📅 Schedule for station {station_id}{station_name} on {date}{page_info}:\n\n"
     
-    # Show up to 10 departures to keep response manageable
-    for i, schedule_item in enumerate(schedule[:10]):
+    # Show all items in the current page (no longer limit to 10 here)
+    for i, schedule_item in enumerate(schedule):
         # Format time information for this station
         time_info = ""
         if schedule_item.arrival and schedule_item.departure:
@@ -114,7 +117,55 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule]) 
         
         reply_text += "\n"
     
-    if len(schedule) > 10:
-        reply_text += f"... and {len(schedule) - 10} more departures\n"
-    
     return reply_text.strip()
+
+def create_pagination_keyboard(station_id: str, current_page: int, total_pages: int) -> InlineKeyboardMarkup:
+    """Create pagination keyboard for schedule navigation."""
+    keyboard = []
+    
+    if total_pages <= 1:
+        return InlineKeyboardMarkup(keyboard)
+    
+    buttons = []
+    
+    # Previous button
+    if current_page > 1:
+        prev_callback = f"schedule_page:{station_id}:{current_page - 1}"
+        buttons.append(InlineKeyboardButton("◀️ Previous", callback_data=prev_callback))
+    
+    # Page indicator
+    page_indicator = f"Page {current_page}/{total_pages}"
+    buttons.append(InlineKeyboardButton(page_indicator, callback_data="noop"))
+    
+    # Next button  
+    if current_page < total_pages:
+        next_callback = f"schedule_page:{station_id}:{current_page + 1}"
+        buttons.append(InlineKeyboardButton("Next ▶️", callback_data=next_callback))
+    
+    keyboard.append(buttons)
+    return InlineKeyboardMarkup(keyboard)
+
+def paginate_schedule(schedule: List[Schedule], page: int = 1, per_page: int = 10) -> Tuple[List[Schedule], int, int]:
+    """Paginate schedule results.
+    
+    Args:
+        schedule: List of schedule items
+        page: Current page number (1-based)
+        per_page: Items per page
+        
+    Returns:
+        Tuple of (paginated_items, current_page, total_pages)
+    """
+    if not schedule:
+        return [], 1, 1
+        
+    total_items = len(schedule)
+    total_pages = max(1, (total_items + per_page - 1) // per_page)  # Ceiling division
+    current_page = max(1, min(page, total_pages))  # Clamp to valid range
+    
+    start_index = (current_page - 1) * per_page
+    end_index = min(start_index + per_page, total_items)
+    
+    paginated_items = schedule[start_index:end_index]
+    
+    return paginated_items, current_page, total_pages
