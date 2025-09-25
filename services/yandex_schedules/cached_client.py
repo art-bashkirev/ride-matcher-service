@@ -114,6 +114,10 @@ class CachedYandexSchedules:
         """Get thread information (no caching)."""
         return await self.client.get_thread(req)
 
+    async def get_stations_list(self, req=None):
+        """Get stations list (no caching - large dataset fetched once)."""
+        return await self.client.get_stations_list(req)
+
     async def clear_cache(self, pattern: str = "*") -> int:
         """Clear cache entries."""
         return await self.cache.clear_cache(pattern)
