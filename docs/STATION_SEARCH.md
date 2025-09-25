@@ -352,11 +352,13 @@ python -c "from services.database.stations_service import get_stations_service; 
 ### Required Packages
 
 ```
-motor>=3.7.1          # MongoDB async driver
-pymongo>=4.0           # MongoDB Python driver  
+pymongo>=4.8.0         # MongoDB async driver (primary - replaces Motor)
+motor>=3.7.1          # MongoDB async driver (legacy support)
 pydantic>=2.0          # Data validation
 telegram>=22.0         # Telegram bot framework
 ```
+
+**Note**: This project has migrated from Motor to PyMongo's native async client (`AsyncMongoClient`) as PyMongo now provides official async support. Motor is kept for compatibility during transition.
 
 ### System Requirements
 
