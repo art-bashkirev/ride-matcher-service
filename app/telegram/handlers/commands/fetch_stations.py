@@ -14,7 +14,7 @@ slug = "fetch_stations"
 
 
 async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /fetch_stations command - admin only operation."""
+    """Handle /fetch_stations command - manual refresh operation."""
     if not update.message:
         return
 
@@ -22,40 +22,43 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Show loading message
     loading_message = await update.message.reply_text(
-        "⏳ Fetching and storing all stations from Yandex API...\n"
-        "This may take a while (large dataset)."
+        "⏳ Manually refreshing stations data from Yandex API...\n"
+        "This will update the stations database with the latest data."
     )
 
-    logger.info("User %s requested stations fetch", username)
+    logger.info("User %s requested manual stations refresh", username)
 
     try:
+        stations_service = get_stations_service()
+        current_count = await stations_service.get_stations_count()
+        
         # Fetch stations from Yandex API
         async with CachedYandexSchedules() as client:
             stations_response = await client.get_stations_list(StationsListRequest())
 
         # Store in MongoDB
-        stations_service = get_stations_service()
         stored_count = await stations_service.flatten_and_store_stations(stations_response)
 
         success_message = (
-            f"✅ Successfully fetched and stored stations!\n\n"
+            f"✅ Successfully refreshed stations data!\n\n"
             f"📊 **Statistics:**\n"
-            f"• Stations stored: {stored_count:,}\n"
+            f"• Previous stations: {current_count:,}\n"
+            f"• New stations stored: {stored_count:,}\n"
             f"• Countries: {len(stations_response.countries)}\n"
             f"• Total regions: {sum(len(country.regions) for country in stations_response.countries)}\n"
             f"• Total settlements: {sum(len(region.settlements) for country in stations_response.countries for region in country.regions)}\n\n"
-            f"You can now use /search_station to find stations!"
+            f"🔍 Station search is ready to use with updated data!"
         )
 
         await loading_message.edit_text(success_message)
         
-        logger.info("Successfully fetched and stored %d stations for user %s", stored_count, username)
+        logger.info("Successfully refreshed and stored %d stations for user %s", stored_count, username)
 
     except Exception as e:
-        logger.error("Error fetching stations: %s", str(e))
+        logger.error("Error refreshing stations: %s", str(e))
 
         error_message = (
-            f"❌ Error fetching stations from Yandex API\n"
+            f"❌ Error refreshing stations from Yandex API\n"
             f"Please try again later or contact support.\n\n"
             f"Error details: {str(e)}"
         )
