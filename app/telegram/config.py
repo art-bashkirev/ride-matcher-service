@@ -1,7 +1,11 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
 from typing import Optional
+
+from pydantic import BaseModel
+
 from config.settings import get_config
+
 
 class TelegramSettings(BaseModel):
     token: Optional[str]
@@ -12,4 +16,3 @@ class TelegramSettings(BaseModel):
     def load(cls) -> "TelegramSettings":
         cfg = get_config()
         return cls(token=cfg.telegram_bot_token, enabled=bool(cfg.telegram_bot_token))
-

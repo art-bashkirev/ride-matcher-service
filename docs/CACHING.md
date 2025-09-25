@@ -4,21 +4,22 @@ This document describes the Redis-based caching layer implemented for the Yandex
 
 ## Overview
 
-The caching layer provides automatic caching of API responses to minimize Yandex API calls and improve response times. It uses Redis with built-in TTL (Time To Live) expiration.
+The caching layer provides automatic caching of API responses to minimize Yandex API calls and improve response times.
+It uses Redis with built-in TTL (Time To Live) expiration.
 
 ## Architecture
 
 ### Components
 
 1. **`YandexSchedulesCache`** (`services/cache/redis_cache.py`)
-   - Core cache manager using Redis
-   - Handles cache key generation, storage, and retrieval
-   - Uses Redis TTL for automatic expiration
+    - Core cache manager using Redis
+    - Handles cache key generation, storage, and retrieval
+    - Uses Redis TTL for automatic expiration
 
 2. **`CachedYandexSchedules`** (`services/yandex_schedules/cached_client.py`)
-   - Wrapper around the original `YandexSchedules` client
-   - Implements cache-first strategy
-   - Transparent to the caller
+    - Wrapper around the original `YandexSchedules` client
+    - Implements cache-first strategy
+    - Transparent to the caller
 
 ### Cache Strategy
 
@@ -85,40 +86,48 @@ The bot will indicate whether data came from cache or fresh API call.
 The cache supports two key generation strategies, configurable via `CACHE_READABLE_KEYS`:
 
 ### Hashed Keys (Default)
+
 ```bash
 CACHE_READABLE_KEYS=false
 ```
 
 Uses MD5 hashes for compact, collision-resistant keys:
+
 - **Schedule**: `schedule:d42a333c616e1b8c270c8ca2c3117087`
 - **Search**: `search:40cc92d197a76af404e57920eb8b7b13`
 
 **Pros:**
+
 - Compact and fixed length (32-character hash)
 - No character escaping needed
 - Collision resistant
 - Better performance with many keys
 
 **Cons:**
+
 - Not human readable
 - Hard to debug and monitor
 
 ### Readable Keys
+
 ```bash
 CACHE_READABLE_KEYS=true
 ```
 
 Uses human-readable keys with parameter values:
+
 - **Schedule**: `schedule:station_s9600213:date_2024-09-24:tz_Europe_Moscow:limit_20`
 - **Search**: `search:from_s9600213:to_s9600366:date_2024-09-24:tz_Europe_Moscow:limit_50:offset_10`
 
 **Pros:**
+
 - Human readable and debuggable
 - Easy to understand in Redis CLI
 - Can filter by patterns (e.g., `schedule:station_s9600213:*`)
 - Great for development and troubleshooting
 
 **Cons:**
+
 - Longer keys use more memory
 - Need character sanitization for special chars
 - Variable length
@@ -208,18 +217,18 @@ maxmemory-policy allkeys-lru
    ```
    ERROR: Failed to connect to Redis: Error 111 connecting to localhost:6379
    ```
-   - Check if Redis server is running
-   - Verify Redis host/port configuration
+    - Check if Redis server is running
+    - Verify Redis host/port configuration
 
 2. **Cache Always Misses**
-   - Check Redis memory limits
-   - Verify TTL settings aren't too short
-   - Look for request parameter variations
+    - Check Redis memory limits
+    - Verify TTL settings aren't too short
+    - Look for request parameter variations
 
 3. **High Memory Usage**
-   - Reduce TTL values
-   - Implement memory limits in Redis
-   - Monitor cache statistics
+    - Reduce TTL values
+    - Implement memory limits in Redis
+    - Monitor cache statistics
 
 ### Debug Commands
 

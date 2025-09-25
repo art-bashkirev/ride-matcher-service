@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
-from typing import List, Any
+from typing import List
+
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-from app.telegram.handlers.commands.echo_text import function as echo_text
+
 from app.telegram.handlers.callbacks import handle_schedule_pagination, handle_noop_callback
+from app.telegram.handlers.commands.echo_text import function as echo_text
+
 
 class HandlerRegistry:
     """Registry for organizing and registering Telegram bot handlers."""
@@ -16,7 +19,7 @@ class HandlerRegistry:
         self._message_handlers: List[tuple] = [
             (filters.TEXT & ~filters.COMMAND, echo_text),
         ]
-        
+
         # Callback query handlers for inline keyboards  
         self._callback_handlers: List[tuple] = [
             ("schedule_page:", handle_schedule_pagination),
@@ -45,7 +48,7 @@ class HandlerRegistry:
     def _register_message_handlers(self, app: Application) -> None:
         for filter_obj, handler in self._message_handlers:
             app.add_handler(MessageHandler(filter_obj, handler))
-    
+
     def _register_callback_handlers(self, app: Application) -> None:
         """Register callback query handlers for inline keyboards."""
         for pattern, handler in self._callback_handlers:

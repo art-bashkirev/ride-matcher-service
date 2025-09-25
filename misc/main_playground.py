@@ -1,13 +1,11 @@
 import asyncio
-import json
 
 import anyio
 
+from config import get_config
 from services.yandex_schedules.client import YandexSchedules
-from services.yandex_schedules.models.schedule import ScheduleRequest
 from services.yandex_schedules.models.search import SearchRequest
 from services.yandex_schedules.models.thread import ThreadRequest
-from config import get_config
 
 # Let's try using Search and Schedule endpoints to get the latest thread UIDs
 from_ = "s9600731"
@@ -19,14 +17,14 @@ async def main():
     # Get configuration from the centralized config module
     # This replaces direct environment variable access with a production-ready config system
     config = get_config()
-    
+
     print("Using configuration:")
     print(f"  - Environment: {config.environment}")
     print(f"  - Timezone: {config.result_timezone}")
     print(f"  - Is Production: {config.is_production}")
     print(f"  - API Key configured: {'Yes' if config.yandex_schedules_api_key else 'No'}")
     print()
-    
+
     search_request = SearchRequest(
         from_=from_,
         to=to,

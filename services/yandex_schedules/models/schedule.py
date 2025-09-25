@@ -1,6 +1,8 @@
 from pydantic import BaseModel
+
 from .common import ThreadFilter, CodingSystem, Pagination, StationType, SearchCodes, TransportType, ShowSystems
 from .thread import Thread
+
 
 class ScheduleRequest(BaseModel):
     station: str
@@ -15,6 +17,7 @@ class ScheduleRequest(BaseModel):
     limit: int | None = None
     offset: int | None = 0
 
+
 class Schedule(BaseModel):
     except_days: str | None
     arrival: str | None = None
@@ -25,6 +28,7 @@ class Schedule(BaseModel):
     departure: str
     terminal: str | None
     platform: str | None
+
 
 class ScheduleDirection(BaseModel):
     code: str

@@ -1,8 +1,9 @@
 from __future__ import annotations
-import asyncio
+
 import contextlib
 import time
 from typing import Optional
+
 from aiohttp import web
 
 from config.log_setup import get_logger
@@ -11,6 +12,7 @@ from .middleware.logging import request_logging_middleware
 from .routes.health import health
 
 logger = get_logger(__name__)
+
 
 class ApiServerService:
     """High-level API server service with middleware and routes."""

@@ -1,15 +1,16 @@
 from __future__ import annotations
-import asyncio
+
 from contextlib import suppress
 from typing import Optional
 
 from telegram.ext import Application
 
+from config.log_setup import get_logger
 from .config import TelegramSettings
 from .handlers.registry import HandlerRegistry
-from config.log_setup import get_logger
 
 logger = get_logger(__name__)
+
 
 class TelegramBotService:
     """Service class wrapping python-telegram-bot with explicit async lifecycle."""
@@ -22,11 +23,11 @@ class TelegramBotService:
         if not self.settings.token:
             return None
         app = Application.builder().token(self.settings.token).build()
-        
+
         # Register all handlers through the registry
         registry = HandlerRegistry()
         registry.register_all(app)
-        
+
         return app
 
     @property

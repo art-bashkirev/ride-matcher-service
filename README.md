@@ -4,8 +4,10 @@ Concurrent aiohttp API server + Telegram bot service.
 
 ## Components
 
-* `ApiServerService` (aiohttp) with middleware + `/healthz` (includes uptime & request_id) and structured request logging.
-* `TelegramBotService` wraps `python-telegram-bot` with clean async lifecycle (only starts if `TELEGRAM_BOT_TOKEN` present).
+* `ApiServerService` (aiohttp) with middleware + `/healthz` (includes uptime & request_id) and structured request
+  logging.
+* `TelegramBotService` wraps `python-telegram-bot` with clean async lifecycle (only starts if `TELEGRAM_BOT_TOKEN`
+  present).
 
 ## Running
 
@@ -60,6 +62,7 @@ watchfiles 'python main.py'
 * Add structured logging (JSON) for production.
 * Add tests for handlers & lifecycle.
 * Add more API endpoints.
+
 # Ride Matcher Service
 
 A service for matching ride requests with train schedules using the Yandex Schedules API.
@@ -95,7 +98,7 @@ This project uses Pydantic BaseSettings for configuration management.
 ### Environment Variables
 
 - `YANDEX_SCHEDULES_API_KEY` (required): Your Yandex Schedules API key
-- `RESULT_TIMEZONE` (optional): Timezone for results (default: "Europe/Moscow")  
+- `RESULT_TIMEZONE` (optional): Timezone for results (default: "Europe/Moscow")
 - `ENVIRONMENT` (optional): Environment name (default: "development")
 - `LOG_LEVEL` (optional): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) default: INFO
 - `HTTP_HOST` / `HTTP_PORT` (optional): Host/port for health & future HTTP endpoints (defaults: 0.0.0.0:8000)
@@ -123,7 +126,9 @@ On startup you'll see a single consolidated line summarizing runtime config, e.g
 
 ### Architecture
 
-The entrypoint (`main.py`) is intentionally thin: it configures logging, logs environment context, and delegates lifecycle management to `ServiceManager` (`app/runtime.py`). This keeps startup/shutdown logic isolated from business code.
+The entrypoint (`main.py`) is intentionally thin: it configures logging, logs environment context, and delegates
+lifecycle management to `ServiceManager` (`app/runtime.py`). This keeps startup/shutdown logic isolated from business
+code.
 
 ### Example `.env` snippet
 

@@ -1,8 +1,8 @@
 """Configuration module using Pydantic BaseSettings (pydantic v2)."""
 
+import pytz
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import pytz
 
 
 class Config(BaseSettings):
@@ -29,19 +29,19 @@ class Config(BaseSettings):
 
     # Telegram bot
     telegram_bot_token: str | None = Field(default=None)
-    
+
     # Redis configuration for caching
     redis_host: str = Field(default="localhost")
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
     redis_username: str | None = Field(default=None)
     redis_password: str | None = Field(default=None)
-    
+
     # Cache configuration
     cache_ttl_search: int = Field(default=3600)  # 1 hour for search results
     cache_ttl_schedule: int = Field(default=1800)  # 30 minutes for schedule results
     cache_readable_keys: bool = Field(default=False)  # Use readable keys instead of hashes
-    
+
     @field_validator('result_timezone')
     def validate_timezone(cls, v):
         """Validate timezone string."""
@@ -50,17 +50,17 @@ class Config(BaseSettings):
             return v
         except pytz.exceptions.UnknownTimeZoneError:
             raise ValueError(f"Invalid timezone: {v}")
-    
+
     @property
     def timezone(self) -> pytz.BaseTzInfo:
         """Get timezone object."""
         return pytz.timezone(self.result_timezone)
-    
+
     @property
     def is_production(self) -> bool:
         """Check if running in production environment."""
         return self.environment.lower() in ("production", "prod")
-    
+
     @property
     def is_development(self) -> bool:
         """Check if running in development environment."""
@@ -69,7 +69,6 @@ class Config(BaseSettings):
     @property
     def normalized_log_level(self) -> str:
         """Return an upper-case validated log level string with fallback to INFO."""
-        import logging
         level = str(self.log_level).upper()
         if level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             return "INFO"

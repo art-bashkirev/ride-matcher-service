@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 import time
+
 from aiohttp import web
+
 
 async def health(request: web.Request):
     started_at = request.app['started_at']

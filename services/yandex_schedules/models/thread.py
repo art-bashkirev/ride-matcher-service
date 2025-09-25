@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
-from .common import Interval, TransportType, TransportSubtype, ShowSystems, StationType
 from .carrier import Carrier
+from .common import Interval, TransportType, TransportSubtype, ShowSystems, StationType
+
 
 # Thread UID may change over time.
 # Therefore, it is needed to fetch the latest thread UID from Search or Schedule responses
@@ -9,6 +10,7 @@ class ThreadCodes(BaseModel):
     express: str | None = None
     yandex: str | None = None
     esr: str | None = None
+
 
 class Station(BaseModel):
     codes: ThreadCodes
@@ -20,6 +22,7 @@ class Station(BaseModel):
     code: str | None
     type: str | None
 
+
 class Stop(BaseModel):
     arrival: str | None
     departure: str | None
@@ -28,6 +31,7 @@ class Stop(BaseModel):
     station: Station | None
     terminal: str | None
     platform: str | None
+
 
 class Thread(BaseModel):
     uid: str | None = None
@@ -42,12 +46,14 @@ class Thread(BaseModel):
     transport_subtype: TransportSubtype | None = None
     express_type: str | None = None
 
+
 class ThreadRequest(BaseModel):
     uid: str
     from_: str | None = None
     to: str | None = None
     date: str | None = None
     show_systems: ShowSystems | None = None
+
 
 class ThreadResponse(BaseModel):
     except_days: str | None = None

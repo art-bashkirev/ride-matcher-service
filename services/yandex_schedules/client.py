@@ -1,13 +1,15 @@
-import json
+import os
+from typing import List, Union
+
 import os
 from typing import List, Union
 
 import aiohttp
 
 from .models.carrier import Carrier, CarrierRequest
-from .models.copyright import CopyrightRequest, CopyrightResponse
-from .models.search import SearchRequest, SearchResponse
+from .models.copyright import CopyrightResponse
 from .models.schedule import ScheduleRequest, ScheduleResponse
+from .models.search import SearchRequest, SearchResponse
 from .models.stations_list import StationsListRequest, StationsListResponse
 from .models.thread import ThreadRequest, ThreadResponse
 
@@ -68,7 +70,8 @@ class YandexSchedules:
     async def get_carrier(self, req: CarrierRequest) -> Union[Carrier, List[Carrier]]:
         # The API's endpoint for a single carrier is "carrier".
         # You need to pass the parameters from the request object.
-        params = req.model_dump(mode='json', exclude_none=True, by_alias=True)  # Converts the Pydantic model to a dictionary.
+        params = req.model_dump(mode='json', exclude_none=True,
+                                by_alias=True)  # Converts the Pydantic model to a dictionary.
         data = await self._get("carrier", **params)
 
         # The API returns a dictionary with keys 'carrier' and 'carriers'.

@@ -1,10 +1,12 @@
 from telegram import Update
 from telegram.ext import ContextTypes
+
 from config.log_setup import get_logger
 
 logger = get_logger(__name__)
 
 slug = "test"
+
 
 async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /test command."""

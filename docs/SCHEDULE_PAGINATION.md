@@ -7,29 +7,34 @@ The schedule command now supports pagination to handle large numbers of departur
 ## Features
 
 ### 🔄 Automatic Pagination
+
 - Results are automatically paginated to **10 departures per page**
 - Only **future departures** are shown (past departures are filtered out)
 - Page information is displayed in the header: `(Page X of Y)`
 
 ### 🎮 Navigation Controls
+
 - **Next ▶️** button: Navigate to the next page
-- **◀️ Previous** button: Navigate to the previous page  
+- **◀️ Previous** button: Navigate to the previous page
 - **Page X/Y** indicator: Shows current page (non-clickable)
 - Buttons automatically hide when not applicable (e.g., no "Previous" on first page)
 
 ## Usage
 
 ### Basic Command
+
 ```
 /schedule s9600213
 ```
 
 The bot will show:
+
 1. First page of results (up to 10 departures)
 2. Inline keyboard with navigation buttons (if multiple pages exist)
 3. Station information and data source
 
 ### Navigation
+
 - Click **Next ▶️** to go to the next page
 - Click **◀️ Previous** to go to the previous page
 - The page indicator shows your current position
@@ -73,20 +78,24 @@ Bot: 📅 Schedule for station s9600213 (Moscow Yaroslavsky) on 2024-01-01 (Page
 ## Technical Details
 
 ### Pagination Logic
+
 - **Per Page**: 10 items maximum
 - **Page Calculation**: Automatic based on total filtered results
 - **Page Bounds**: Pages are clamped to valid range (1 to total_pages)
 
 ### Callback Data Format
+
 - Format: `schedule_page:{station_id}:{page_number}`
 - Example: `schedule_page:s9600213:2`
 
 ### Future-Only Filtering
+
 - Compares departure times with current UTC time
 - Only shows departures that are in the future
 - Invalid times are excluded for safety
 
 ### Caching Integration
+
 - Maintains existing caching behavior
 - Shows data source transparency ("Cache" vs "Fresh API")
 - Pagination works with cached data for performance
@@ -94,7 +103,7 @@ Bot: 📅 Schedule for station s9600213 (Moscow Yaroslavsky) on 2024-01-01 (Page
 ## Error Handling
 
 - **Invalid station ID**: Shows format error message
-- **No departures**: Shows "No departures found" message  
+- **No departures**: Shows "No departures found" message
 - **API errors**: Shows generic error with retry suggestion
 - **Invalid page**: Automatically clamps to valid page range
 

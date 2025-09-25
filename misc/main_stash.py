@@ -1,9 +1,9 @@
 import asyncio
 import os
-import json
 from datetime import datetime, time
-import pytz
 from typing import List, Dict, NamedTuple
+
+import pytz
 
 # Assuming your ORM classes are in this structure
 from services.yandex_schedules.client import YandexSchedules
@@ -36,47 +36,49 @@ class UserIntent(NamedTuple):
     arrive_by_start: time
     arrive_by_end: time
 
+
 # --- Mock User Data (Simulating N users) ---
 # Using real station codes for Podolsk, Silikatnaya, Shcherbinka, and Tsaritsyno
 # This represents the `users` collection in your database.
 MOCK_USER_INTENTS = [
     UserIntent(
         user_id="Alice (Podolsk, arr. by 8:30 - 9:00)",
-        from_station_code="s9600731", # Podolsk
-        to_station_code="s9600891",   # Tsaritsyno
+        from_station_code="s9600731",  # Podolsk
+        to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(8, 30),
         arrive_by_end=time(9, 0)
     ),
     UserIntent(
         user_id="Bob (Silikatnaya, arr. by 8:30 - 9:00)",
-        from_station_code="s9602273", # Silikatnaya
-        to_station_code="s9600891",   # Tsaritsyno
+        from_station_code="s9602273",  # Silikatnaya
+        to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(8, 30),
         arrive_by_end=time(9, 0)
 
     ),
     UserIntent(
         user_id="Charlie (Podolsk, arr. by 9:15 - 10:00)",
-        from_station_code="s9600731", # Podolsk
-        to_station_code="s9600891",   # Tsaritsyno
+        from_station_code="s9600731",  # Podolsk
+        to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(9, 15),
         arrive_by_end=time(10, 0)
     ),
     UserIntent(
         user_id="Dan (Shcherbinka, arr. by 8:45-9:15)",
-        from_station_code="s9600951", # Shcherbinka
-        to_station_code="s9600891",   # Tsaritsyno
+        from_station_code="s9600951",  # Shcherbinka
+        to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(8, 45),
         arrive_by_end=time(9, 15)
     ),
-     UserIntent(
+    UserIntent(
         user_id="Eve (Podolsk, 9:15 - 10:00)",
-        from_station_code="s9600731", # Podolsk
-        to_station_code="s9600891",   # Tsaritsyno
+        from_station_code="s9600731",  # Podolsk
+        to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(9, 15),
         arrive_by_end=time(10, 0)
     ),
 ]
+
 
 # TODO: Reimplement in Modules, Provide feasible visual checks for the algorithm
 # TODO: Implement Departure Time Window Logic!
@@ -101,11 +103,11 @@ async def fetch_and_cache_schedules(client: YandexSchedules, intents: List[UserI
             to=to_code,
             date=PROD_LIKE_DATE,
             result_timezone=RESULT_TIMEZONE_STR,
-            limit=300 # Get all trains for the day
+            limit=300  # Get all trains for the day
         )
         search_result, was_cached = await client.get_search_results(request)
         cached_schedules[route_key] = search_result
-    
+
     print("--- Cache fetch complete. ---\n")
     return cached_schedules
 
@@ -128,7 +130,7 @@ def find_candidate_trains(intent: UserIntent, cached_schedules: Dict[str, Search
 
         if intent.arrive_by_start <= arrival_time <= intent.arrive_by_end:
             candidate_trains.append(segment)
-            
+
     return candidate_trains
 
 
@@ -144,7 +146,7 @@ def find_matches(intents: List[UserIntent], cached_schedules: Dict[str, SearchRe
     for intent in intents:
         candidate_trains = find_candidate_trains(intent, cached_schedules)
         print(f"User '{intent.user_id}' has {len(candidate_trains)} candidate trains in their time window.")
-        
+
         # Populate the dictionary with this user's possible trains
         for train in candidate_trains:
             if train.thread and train.thread.uid:
@@ -153,7 +155,7 @@ def find_matches(intents: List[UserIntent], cached_schedules: Dict[str, SearchRe
                 potential_matches.setdefault(uid, []).append(intent)
 
     print("--- Match analysis complete. ---\n")
-    
+
     # Filter for actual matches (groups of 2 or more)
     final_matches = {uid: users for uid, users in potential_matches.items() if len(users) >= 2}
     return final_matches
@@ -177,15 +179,17 @@ def present_results(matches: Dict[str, List[UserIntent]], cached_schedules: Dict
         for user in users:
             route_key = f"{user.from_station_code}_{user.to_station_code}"
             full_schedule = cached_schedules[route_key]
-            
+
             # Find the exact train segment that corresponds to this UID for this user's route
             matched_segment = next((s for s in full_schedule.segments if s.thread and s.thread.uid == uid), None)
-            
+
             if matched_segment:
-                departure_time = datetime.fromisoformat(matched_segment.departure).astimezone(RESULT_TIMEZONE).strftime('%H:%M')
-                arrival_time = datetime.fromisoformat(matched_segment.arrival).astimezone(RESULT_TIMEZONE).strftime('%H:%M')
+                departure_time = datetime.fromisoformat(matched_segment.departure).astimezone(RESULT_TIMEZONE).strftime(
+                    '%H:%M')
+                arrival_time = datetime.fromisoformat(matched_segment.arrival).astimezone(RESULT_TIMEZONE).strftime(
+                    '%H:%M')
                 print(f"  - Proposal for {user.user_id}: Depart at {departure_time}, Arrive at {arrival_time}")
-        
+
         match_num += 1
 
 
@@ -194,7 +198,7 @@ async def main():
     async with YandexSchedules(YANDEX_SCHEDULES_API_KEY) as client:
         # Step 1: Simulate the overnight job fetching all necessary data
         cached_schedules = await fetch_and_cache_schedules(client, MOCK_USER_INTENTS)
-        
+
         # Step 2: Run the matching algorithm on the active users using the cached data
         final_matches = find_matches(MOCK_USER_INTENTS, cached_schedules)
 

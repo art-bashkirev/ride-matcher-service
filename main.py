@@ -1,8 +1,9 @@
 import asyncio
-from config.log_setup import get_logger
-from config.settings import get_config
+
 from app.api.service import ApiServerService
 from app.telegram.service import TelegramBotService
+from config.log_setup import get_logger
+from config.settings import get_config
 
 logger = get_logger(__name__)
 

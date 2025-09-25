@@ -4,8 +4,6 @@ from .common import TransportType, Pagination, CodingSystem, SegmentType, Statio
 from .thread import Thread
 
 
-
-
 class Price(BaseModel):
     cents: int | None = None
     whole: int | None = None
@@ -20,8 +18,6 @@ class Place(BaseModel):
 class TicketsInfo(BaseModel):
     et_marker: bool | None = None
     places: list[Place] | None = None
-
-
 
 
 class SegmentPoint(BaseModel):
