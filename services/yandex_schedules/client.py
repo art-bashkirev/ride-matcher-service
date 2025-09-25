@@ -1,11 +1,9 @@
 import os
 from typing import List, Union
 
-import os
-from typing import List, Union
-
 import aiohttp
 
+from config.settings import get_config
 from .models.carrier import Carrier, CarrierRequest
 from .models.copyright import CopyrightResponse
 from .models.schedule import ScheduleRequest, ScheduleResponse
@@ -18,9 +16,11 @@ class YandexSchedules:
     BASE_URL = "https://api.rasp.yandex.net/v3.0/"
 
     def __init__(self, api_key: str | None = None, timeout: int = 10):
-        self.api_key = api_key or os.getenv("YANDEX_SCHEDULES_API_KEY")
+        # Use centralized config as primary source, fallback to env var and parameter
+        config = get_config()
+        self.api_key = api_key or config.yandex_schedules_api_key or os.getenv("YANDEX_SCHEDULES_API_KEY")
         if not self.api_key:
-            raise RuntimeError("YANDEX_SCHEDULES_API_KEY not provided")
+            raise RuntimeError("YANDEX_SCHEDULES_API_KEY not provided via config, parameter, or environment variable")
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self._session: aiohttp.ClientSession | None = None
 
