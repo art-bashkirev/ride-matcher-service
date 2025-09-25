@@ -5,7 +5,7 @@ import json
 from typing import Optional, Type, TypeVar
 
 from pydantic import BaseModel
-from redis import Redis
+from redis.asyncio import Redis as AsyncRedis
 from redis.exceptions import RedisError
 
 from config.log_setup import get_logger
@@ -24,13 +24,13 @@ class YandexSchedulesCache:
     def __init__(self):
         """Initialize Redis connection."""
         self.config = get_config()
-        self._redis: Optional[Redis] = None
+        self._redis: Optional[AsyncRedis] = None
 
-    def _get_redis(self) -> Redis:
+    async def _get_redis(self) -> AsyncRedis:
         """Get or create Redis connection."""
         if self._redis is None:
             try:
-                self._redis = Redis(
+                self._redis = AsyncRedis(
                     host=self.config.redis_host,
                     port=self.config.redis_port,
                     db=self.config.redis_db,
@@ -42,7 +42,7 @@ class YandexSchedulesCache:
                     health_check_interval=30
                 )
                 # Test connection
-                self._redis.ping()
+                await self._redis.ping()
                 logger.info("Redis connection established successfully")
             except RedisError as e:
                 logger.error("Failed to connect to Redis: %s", e)
@@ -58,6 +58,18 @@ class YandexSchedulesCache:
                 return self._generate_hashed_cache_key(prefix, request)
         except Exception as e:
             logger.error("Error generating cache key: %s", e)
+            # Fallback to a basic key
+            return f"{prefix}:error_{hash(str(request))}"
+
+    def _generate_alternate_cache_key(self, prefix: str, request: BaseModel) -> str:
+        """Generate the alternate cache key format (opposite of current setting)."""
+        try:
+            if self.config.cache_readable_keys:
+                return self._generate_hashed_cache_key(prefix, request)
+            else:
+                return self._generate_readable_cache_key(prefix, request)
+        except Exception as e:
+            logger.error("Error generating alternate cache key: %s", e)
             # Fallback to a basic key
             return f"{prefix}:error_{hash(str(request))}"
 
@@ -125,8 +137,24 @@ class YandexSchedulesCache:
             response_type: Type[T] = SearchResponse
     ) -> Optional[T]:
         """Get cached search results."""
+        logger.info("get_search_results called with request: %s", request.model_dump())
         cache_key = self._generate_cache_key("search", request)
-        return await self._get_cached_response(cache_key, response_type)
+        logger.debug("Requesting cached search results with key: %s", cache_key)
+        result = await self._get_cached_response(cache_key, response_type)
+        if result is not None:
+            logger.info("Cache hit for search results with key: %s", cache_key)
+            return result
+
+        alt_cache_key = self._generate_alternate_cache_key("search", request)
+        if alt_cache_key != cache_key:
+            logger.debug("Trying alternate key format for search results: %s", alt_cache_key)
+            result = await self._get_cached_response(alt_cache_key, response_type)
+            if result is not None:
+                logger.info("Cache hit for search results with alternate key: %s", alt_cache_key)
+                return result
+
+        logger.info("Cache miss for search results with request: %s", request.model_dump())
+        return None
 
     async def set_search_results(
             self,
@@ -134,9 +162,15 @@ class YandexSchedulesCache:
             response: SearchResponse
     ) -> bool:
         """Cache search results."""
+        logger.info("set_search_results called with request: %s", request.model_dump())
         cache_key = self._generate_cache_key("search", request)
         ttl = self.config.cache_ttl_search
-        return await self._set_cached_response(cache_key, response, ttl)
+        result = await self._set_cached_response(cache_key, response, ttl)
+        if result:
+            logger.info("Search results cached successfully for key: %s", cache_key)
+        else:
+            logger.warning("Failed to cache search results for key: %s", cache_key)
+        return result
 
     async def get_schedule_results(
             self,
@@ -144,8 +178,24 @@ class YandexSchedulesCache:
             response_type: Type[T] = ScheduleResponse
     ) -> Optional[T]:
         """Get cached schedule results."""
+        logger.info("get_schedule_results called with request: %s", request.model_dump())
         cache_key = self._generate_cache_key("schedule", request)
-        return await self._get_cached_response(cache_key, response_type)
+        logger.debug("Requesting cached schedule results with key: %s", cache_key)
+        result = await self._get_cached_response(cache_key, response_type)
+        if result is not None:
+            logger.info("Cache hit for schedule results with key: %s", cache_key)
+            return result
+
+        alt_cache_key = self._generate_alternate_cache_key("schedule", request)
+        if alt_cache_key != cache_key:
+            logger.debug("Trying alternate key format for schedule results: %s", alt_cache_key)
+            result = await self._get_cached_response(alt_cache_key, response_type)
+            if result is not None:
+                logger.info("Cache hit for schedule results with alternate key: %s", alt_cache_key)
+                return result
+
+        logger.info("Cache miss for schedule results with request: %s", request.model_dump())
+        return None
 
     async def set_schedule_results(
             self,
@@ -153,9 +203,15 @@ class YandexSchedulesCache:
             response: ScheduleResponse
     ) -> bool:
         """Cache schedule results."""
+        logger.info("set_schedule_results called with request: %s", request.model_dump())
         cache_key = self._generate_cache_key("schedule", request)
         ttl = self.config.cache_ttl_schedule
-        return await self._set_cached_response(cache_key, response, ttl)
+        result = await self._set_cached_response(cache_key, response, ttl)
+        if result:
+            logger.info("Schedule results cached successfully for key: %s", cache_key)
+        else:
+            logger.warning("Failed to cache schedule results for key: %s", cache_key)
+        return result
 
     async def _get_cached_response(
             self,
@@ -163,9 +219,10 @@ class YandexSchedulesCache:
             response_type: Type[T]
     ) -> Optional[T]:
         """Get cached response from Redis."""
+        logger.debug("_get_cached_response called for key: %s", cache_key)
         try:
-            redis_client = self._get_redis()
-            cached_data = redis_client.get(cache_key)
+            redis_client = await self._get_redis()
+            cached_data = await redis_client.get(cache_key)
 
             if cached_data is None:
                 logger.debug("Cache miss for key: %s", cache_key)
@@ -173,6 +230,7 @@ class YandexSchedulesCache:
 
             logger.debug("Cache hit for key: %s", cache_key)
             response_dict = json.loads(cached_data)
+            logger.info("Deserialized cached response for key: %s", cache_key)
             return response_type(**response_dict)
 
         except RedisError as e:
@@ -182,10 +240,11 @@ class YandexSchedulesCache:
             logger.error("Error deserializing cached data for key %s: %s", cache_key, e)
             # Remove corrupted cache entry
             try:
-                redis_client = self._get_redis()
-                redis_client.delete(cache_key)
+                redis_client = await self._get_redis()
+                await redis_client.delete(cache_key)
+                logger.warning("Corrupted cache entry deleted for key: %s", cache_key)
             except RedisError:
-                pass
+                logger.error("Failed to delete corrupted cache entry for key: %s", cache_key)
             return None
 
     async def _set_cached_response(
@@ -195,15 +254,15 @@ class YandexSchedulesCache:
             ttl: int
     ) -> bool:
         """Set cached response in Redis with TTL."""
+        logger.debug("_set_cached_response called for key: %s, ttl: %d", cache_key, ttl)
         try:
-            redis_client = self._get_redis()
+            redis_client = await self._get_redis()
             response_json = response.model_dump_json(by_alias=True)
 
-            # Set with TTL using Redis built-in expiration
-            result = redis_client.setex(cache_key, ttl, response_json)
+            result = await redis_client.setex(cache_key, ttl, response_json)
 
             if result:
-                logger.debug("Cached response for key: %s (TTL: %ds)", cache_key, ttl)
+                logger.info("Cached response for key: %s (TTL: %ds)", cache_key, ttl)
             else:
                 logger.warning("Failed to cache response for key: %s", cache_key)
 
@@ -218,13 +277,16 @@ class YandexSchedulesCache:
 
     async def clear_cache(self, pattern: str = "*") -> int:
         """Clear cache entries matching pattern."""
+        logger.info("clear_cache called with pattern: %s", pattern)
         try:
-            redis_client = self._get_redis()
-            keys = redis_client.keys(pattern)
+            redis_client = await self._get_redis()
+            keys = await redis_client.keys(pattern)
+            logger.debug("Found %d keys matching pattern: %s", len(keys), pattern)
             if keys:
-                deleted = redis_client.delete(*keys)
+                deleted = await redis_client.delete(*keys)
                 logger.info("Cleared %d cache entries matching pattern: %s", deleted, pattern)
                 return deleted
+            logger.info("No cache entries found matching pattern: %s", pattern)
             return 0
         except RedisError as e:
             logger.error("Redis error when clearing cache: %s", e)
@@ -232,15 +294,15 @@ class YandexSchedulesCache:
 
     async def get_cache_stats(self) -> dict:
         """Get cache statistics."""
+        logger.info("get_cache_stats called")
         try:
-            redis_client = self._get_redis()
-            info = redis_client.info()
+            redis_client = await self._get_redis()
+            info = await redis_client.info()
 
-            # Count keys by prefix
-            search_keys = len(redis_client.keys("search:*"))
-            schedule_keys = len(redis_client.keys("schedule:*"))
+            search_keys = len(await redis_client.keys("search:*"))
+            schedule_keys = len(await redis_client.keys("schedule:*"))
 
-            return {
+            stats = {
                 "total_keys": info.get("db0", {}).get("keys", 0) if "db0" in info else 0,
                 "search_keys": search_keys,
                 "schedule_keys": schedule_keys,
@@ -248,19 +310,18 @@ class YandexSchedulesCache:
                 "connected_clients": info.get("connected_clients", 0),
                 "redis_version": info.get("redis_version", "unknown")
             }
+            logger.info("Cache stats: %s", stats)
+            return stats
         except RedisError as e:
             logger.error("Redis error when getting stats: %s", e)
             return {"error": str(e)}
 
     def close(self):
-        """Close Redis connection."""
+        """Reset Redis connection instance without closing the actual connection."""
+        logger.info("close called for Redis connection instance")
         if self._redis:
-            try:
-                self._redis.close()
-                logger.info("Redis connection closed")
-            except RedisError as e:
-                logger.error("Error closing Redis connection: %s", e)
-            self._redis = None
+            logger.info("Redis connection exists (close called) (connection not closed)")
+            # self._redis = None
 
 
 # Global cache instance
