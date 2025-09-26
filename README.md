@@ -97,26 +97,12 @@ This project uses Pydantic BaseSettings for configuration management.
 
 ### Environment Variables
 
-For a complete reference of all environment variables, see **[Environment Variables Documentation](docs/ENVIRONMENT_VARIABLES.md)**.
-
-**Required:**
 - `YANDEX_SCHEDULES_API_KEY` (required): Your Yandex Schedules API key
-- `TELEGRAM_BOT_TOKEN` (required for bot): Telegram bot token from @BotFather
-
-**Optional (with defaults):**
 - `RESULT_TIMEZONE` (optional): Timezone for results (default: "Europe/Moscow")
 - `ENVIRONMENT` (optional): Environment name (default: "development")
 - `LOG_LEVEL` (optional): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) default: INFO
 - `HTTP_HOST` / `HTTP_PORT` (optional): Host/port for health & future HTTP endpoints (defaults: 0.0.0.0:8000)
-
-**Database Configuration:**
-- `MONGODB_URL` (optional): MongoDB connection URL (default: "mongodb://localhost:27017")
-- `MONGODB_DATABASE` (optional): Database name (default: "ride_matcher")
-- `MONGODB_STATIONS_COLLECTION` (optional): Collection name (default: "stations")
-
-**Redis Configuration:**
-- `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB` (optional): Redis connection settings
-- `CACHE_TTL_SEARCH`, `CACHE_TTL_SCHEDULE` (optional): Cache TTL settings
+- `TELEGRAM_BOT_TOKEN` (optional): If provided, the Telegram bot will start; omitted disables bot
 
 ### Running (HTTP health + Telegram bot)
 

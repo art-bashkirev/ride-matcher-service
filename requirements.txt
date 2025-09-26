@@ -1,7 +1,7 @@
-pymongo[snappy,zstd,encryption]>=4.8.0
+pymongo[snappy,zstd,encryption]
 redis-om
 aiohttp[speedups]
-motor>=3.7.1
+motor
 
 python-telegram-bot
 python-dotenv
