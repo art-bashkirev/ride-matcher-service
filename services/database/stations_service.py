@@ -2,7 +2,9 @@
 
 import re
 from typing import List, Optional
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
+from pymongo import AsyncMongoClient
+from pymongo.asynchronous.database import AsyncDatabase
+from pymongo.asynchronous.collection import AsyncCollection
 
 from config.log_setup import get_logger
 from config.settings import get_config
@@ -21,14 +23,14 @@ class StationsService:
     def __init__(self):
         """Initialize MongoDB connection."""
         self.config = get_config()
-        self._client: Optional[AsyncIOMotorClient] = None
-        self._db: Optional[AsyncIOMotorDatabase] = None
-        self._collection: Optional[AsyncIOMotorCollection] = None
+        self._client: Optional[AsyncMongoClient] = None
+        self._db: Optional[AsyncDatabase] = None
+        self._collection: Optional[AsyncCollection] = None
     
-    async def _get_collection(self) -> AsyncIOMotorCollection:
+    async def _get_collection(self) -> AsyncCollection:
         """Get or create MongoDB collection."""
         if self._collection is None:
-            self._client = AsyncIOMotorClient(self.config.mongodb_url)
+            self._client = AsyncMongoClient(self.config.mongodb_url)
             self._db = self._client[self.config.mongodb_database]
             self._collection = self._db[self.config.mongodb_stations_collection]
             
@@ -257,6 +259,7 @@ class StationsService:
     def close(self):
         """Close MongoDB connection."""
         if self._client:
+            # PyMongo's AsyncMongoClient uses close() method
             self._client.close()
             logger.info("MongoDB connection closed")
 

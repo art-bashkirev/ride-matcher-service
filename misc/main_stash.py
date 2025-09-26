@@ -12,6 +12,11 @@ from services.yandex_schedules.models.search import SearchSegment
 
 # --- Configuration & Setup ---
 
+# TODO: Migrate to use centralized config system:
+# from config.settings import get_config
+# config = get_config()
+# YANDEX_SCHEDULES_API_KEY = config.yandex_schedules_api_key
+
 # IMPORTANT: Make sure your YANDEX_SCHEDULES_API_KEY is set as an environment variable
 YANDEX_SCHEDULES_API_KEY = os.environ.get("YANDEX_SCHEDULES_API_KEY")
 if not YANDEX_SCHEDULES_API_KEY:
