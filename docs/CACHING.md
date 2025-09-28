@@ -27,6 +27,7 @@ It uses Redis with built-in TTL (Time To Live) expiration.
 - **Write Through**: Cache successful API responses immediately
 - **TTL-based Expiration**: Uses Redis built-in expiration (no manual fields)
 - **Error Handling**: Gracefully degrades when Redis is unavailable
+- **Structured Schedule Storage**: Schedule responses are stored as Redis hashes with normalized metadata and payloads (legacy string values are still read transparently)
 
 ## Configuration
 
@@ -46,6 +47,10 @@ CACHE_TTL_SCHEDULE=1800  # 30 minutes for schedule results
 
 # Cache Key Strategy
 CACHE_READABLE_KEYS=false  # Use hashed keys (default) or true for readable keys
+
+# Schedule Window Settings
+SCHEDULE_FETCH_NEXT_DAY_AFTER_HOUR=22
+SCHEDULE_FUTURE_WINDOW_HOURS=8
 ```
 
 ## Usage

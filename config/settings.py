@@ -42,6 +42,10 @@ class Config(BaseSettings):
     cache_ttl_schedule: int = Field(default=1800)  # 30 minutes for schedule results
     cache_readable_keys: bool = Field(default=False)  # Use readable keys instead of hashes
 
+    # Schedule display configuration
+    schedule_fetch_next_day_after_hour: int = Field(default=22)  # Hour (local) to start fetching next day's data
+    schedule_future_window_hours: int = Field(default=8)  # Hard cutoff window for upcoming departures
+
     @field_validator('result_timezone')
     def validate_timezone(cls, v):
         """Validate timezone string."""
@@ -50,6 +54,18 @@ class Config(BaseSettings):
             return v
         except pytz.exceptions.UnknownTimeZoneError:
             raise ValueError(f"Invalid timezone: {v}")
+
+    @field_validator('schedule_fetch_next_day_after_hour')
+    def validate_fetch_hour(cls, v):
+        if not 0 <= v <= 23:
+            raise ValueError("schedule_fetch_next_day_after_hour must be between 0 and 23")
+        return v
+
+    @field_validator('schedule_future_window_hours')
+    def validate_window_hours(cls, v):
+        if not 1 <= v <= 24:
+            raise ValueError("schedule_future_window_hours must be between 1 and 24")
+        return v
 
     @property
     def timezone(self) -> pytz.BaseTzInfo:

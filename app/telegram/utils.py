@@ -1,10 +1,57 @@
 import re
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Tuple
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from services.yandex_schedules.models.schedule import Schedule
+
+ISO_UTC_SUFFIX = "+00:00"
+
+
+def _parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace('Z', ISO_UTC_SUFFIX))
+    except (ValueError, AttributeError):
+        return None
+
+
+@dataclass(frozen=True)
+class ScheduleDisplayItem:
+    schedule: Schedule
+    departure_dt: Optional[datetime]
+    arrival_dt: Optional[datetime]
+    is_next_day: bool
+
+
+def _align_datetime(value: Optional[datetime], target_tz) -> Optional[datetime]:
+    if value is None or target_tz is None:
+        return value
+    if value.tzinfo is None:
+        return value.replace(tzinfo=target_tz)
+    return value.astimezone(target_tz)
+
+
+def _should_include_departure(
+        departure: Optional[datetime],
+        current_time: datetime,
+        cutoff_time: Optional[datetime]
+) -> tuple[bool, bool]:
+    aligned_departure = _align_datetime(departure, current_time.tzinfo)
+
+    if aligned_departure is None:
+        return True, False
+
+    if aligned_departure <= current_time:
+        return False, False
+
+    if cutoff_time and aligned_departure > cutoff_time:
+        return False, False
+
+    return True, aligned_departure.date() > current_time.date()
 
 
 def is_valid_station_id(text: str) -> bool:
@@ -12,12 +59,18 @@ def is_valid_station_id(text: str) -> bool:
     return bool(re.match(r'^s\d{7}$', text))
 
 
-def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[datetime] = None) -> List[Schedule]:
+def filter_upcoming_departures(
+    schedule: List[Schedule],
+    current_time: Optional[datetime] = None,
+    *,
+    window_hours: Optional[int] = None
+) -> List[ScheduleDisplayItem]:
     """Filter schedule to show only upcoming departures.
     
     Args:
         schedule: List of schedule items
         current_time: Current time (defaults to now in UTC)
+        window_hours: Optional number of hours ahead to include (hard cutoff)
     
     Returns:
         List of upcoming schedule items (not limited here, display limiting handled by caller)
@@ -28,102 +81,116 @@ def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[
     if current_time is None:
         current_time = datetime.now(timezone.utc)
 
-    upcoming = []
-    for item in schedule:
-        if item.departure:
-            try:
-                # Parse ISO 8601 datetime with timezone
-                departure_dt = datetime.fromisoformat(item.departure.replace('Z', '+00:00'))
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=timezone.utc)
 
-                # Compare with current time
-                if departure_dt > current_time:
-                    upcoming.append(item)
-            except (ValueError, AttributeError):
-                # If we can't parse the time, include it to be safe
-                upcoming.append(item)
+    cutoff_time = current_time + timedelta(hours=window_hours) if window_hours is not None else None
+
+    upcoming: List[ScheduleDisplayItem] = []
+    for item in schedule:
+        departure_dt = _parse_iso_datetime(item.departure)
+        arrival_dt = _parse_iso_datetime(item.arrival)
+
+        include, is_next_day = _should_include_departure(departure_dt, current_time, cutoff_time)
+
+        if not include:
+            continue
+
+        display_departure = _align_datetime(departure_dt, current_time.tzinfo)
+        display_arrival = _align_datetime(arrival_dt, current_time.tzinfo)
+
+        upcoming.append(ScheduleDisplayItem(item, display_departure, display_arrival, is_next_day))
 
     # Return all upcoming departures without artificial limit
     # Display limiting is handled by the caller (format_schedule_reply)
     return upcoming
 
 
-def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], current_page: int = 1,
+def format_schedule_reply(station_id: str, date: str, schedule: List[ScheduleDisplayItem], current_page: int = 1,
                           total_pages: int = 1) -> str:
     """Format schedule data for telegram response."""
     if not schedule:
         return f"📅 No departures found for station {station_id} on {date}"
 
-    # Get station name from first schedule item if available
-    station_name = ""
-    if schedule and schedule[0].thread and schedule[0].thread.title:
-        # Try to extract station name from thread title or use station_id
-        thread_title = schedule[0].thread.title
-        # Thread titles are usually "From - To" format
-        parts = thread_title.split(" - ")
-        if len(parts) >= 2:
-            station_name = f" ({parts[0]})"
-
-    # Add pagination info to header if multiple pages
+    station_name = _extract_station_display_name(schedule)
     page_info = f" (Page {current_page}/{total_pages})" if total_pages > 1 else ""
-    reply_text = f"📅 Schedule for station {station_id}{station_name} on {date}{page_info}:\n\n"
+    header = f"📅 Schedule for station {station_id}{station_name} on {date}{page_info}:"
 
-    # Show all items in the current page (no longer limit to 10 here)
-    for i, schedule_item in enumerate(schedule):
-        # Format time information for this station
-        time_info = ""
-        if schedule_item.arrival and schedule_item.departure:
-            try:
-                arrival_dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
-                departure_dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
-                arrival_time = arrival_dt.strftime('%H:%M')
-                departure_time = departure_dt.strftime('%H:%M')
-                time_info = f"Arrives: {arrival_time}, Departs: {departure_time}"
-            except (ValueError, AttributeError):
-                time_info = f"Arrives: {schedule_item.arrival}, Departs: {schedule_item.departure}"
-        elif schedule_item.departure:
-            try:
-                dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
-                departure_time = dt.strftime('%H:%M')
-                time_info = f"Departs: {departure_time}"
-            except (ValueError, AttributeError):
-                time_info = f"Departs: {schedule_item.departure}"
-        elif schedule_item.arrival:
-            try:
-                dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
-                arrival_time = dt.strftime('%H:%M')
-                time_info = f"Arrives: {arrival_time}"
-            except (ValueError, AttributeError):
-                time_info = f"Arrives: {schedule_item.arrival}"
-        else:
-            time_info = "N/A"
+    body_lines: List[str] = []
+    for entry in schedule:
+        body_lines.extend(_format_schedule_entry(entry))
 
-        # Get thread information
-        thread_info = "Unknown"
-        if schedule_item.thread:
-            # Prefer number over title for trains, but show title for others
-            if schedule_item.thread.number:
-                thread_info = f"{schedule_item.thread.number}"
-                if schedule_item.thread.title:
-                    # Add full title without shortening
-                    thread_info += f" ({schedule_item.thread.title})"
-            else:
-                thread_info = schedule_item.thread.title or "Unknown"
+    body_text = "\n".join(line for line in body_lines if line).strip()
+    if body_text:
+        return f"{header}\n\n{body_text}"
+    return header
 
-        # Format platform information
-        platform_info = ""
-        if schedule_item.platform:
-            platform_info = f" (Platform {schedule_item.platform})"
 
-        reply_text += f"🚂 {thread_info}\n"
-        reply_text += f"🕒 {time_info}{platform_info}\n"
+def _extract_station_display_name(schedule: List[ScheduleDisplayItem]) -> str:
+    if not schedule:
+        return ""
 
-        # Add stops information if available and not too long
-        if schedule_item.stops and len(schedule_item.stops) < 50:
-            reply_text += f"📍 Stops: {schedule_item.stops}\n"
+    thread = schedule[0].schedule.thread
+    if thread and thread.title:
+        parts = thread.title.split(" - ")
+        if len(parts) >= 2:
+            return f" ({parts[0]})"
+    return ""
 
-        reply_text += "\n"
 
-    return reply_text.strip()
+def _format_schedule_entry(entry: ScheduleDisplayItem) -> List[str]:
+    schedule_item = entry.schedule
+    lines = [f"🚂 {_format_thread_info(schedule_item)}"]
+
+    time_line = f"🕒 {_format_time_info(entry)}{_format_platform_info(schedule_item)}"
+    lines.append(time_line)
+
+    if schedule_item.stops and len(schedule_item.stops) < 50:
+        lines.append(f"📍 Stops: {schedule_item.stops}")
+
+    lines.append("")
+    return lines
+
+
+def _format_thread_info(schedule_item: Schedule) -> str:
+    thread = schedule_item.thread
+    if not thread:
+        return "Unknown"
+
+    if thread.number:
+        info = thread.number
+        if thread.title:
+            info += f" ({thread.title})"
+        return info
+
+    return thread.title or "Unknown"
+
+
+def _format_time_info(entry: ScheduleDisplayItem) -> str:
+    schedule_item = entry.schedule
+
+    if entry.arrival_dt and entry.departure_dt:
+        arrival_time = entry.arrival_dt.strftime('%H:%M')
+        departure_time = entry.departure_dt.strftime('%H:%M')
+        base = f"Arrives: {arrival_time}, Departs: {departure_time}"
+    elif entry.departure_dt:
+        base = f"Departs: {entry.departure_dt.strftime('%H:%M')}"
+    elif entry.arrival_dt:
+        base = f"Arrives: {entry.arrival_dt.strftime('%H:%M')}"
+    elif schedule_item.departure:
+        base = f"Departs: {schedule_item.departure}"
+    elif schedule_item.arrival:
+        base = f"Arrives: {schedule_item.arrival}"
+    else:
+        base = "N/A"
+
+    if entry.is_next_day:
+        return f"{base} (next day)"
+    return base
+
+
+def _format_platform_info(schedule_item: Schedule) -> str:
+    return f" (Platform {schedule_item.platform})" if schedule_item.platform else ""
 
 
 def create_pagination_keyboard(station_id: str, current_page: int, total_pages: int) -> InlineKeyboardMarkup:
@@ -153,7 +220,7 @@ def create_pagination_keyboard(station_id: str, current_page: int, total_pages: 
     return InlineKeyboardMarkup(keyboard)
 
 
-def paginate_schedule(schedule: List[Schedule], page: int = 1, per_page: int = 10) -> Tuple[List[Schedule], int, int]:
+def paginate_schedule(schedule: List[ScheduleDisplayItem], page: int = 1, per_page: int = 10) -> Tuple[List[ScheduleDisplayItem], int, int]:
     """Paginate schedule results.
     
     Args:

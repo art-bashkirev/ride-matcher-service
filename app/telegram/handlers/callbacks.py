@@ -1,5 +1,5 @@
 """Callback query handlers for inline keyboards."""
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Tuple
 
 from telegram import Update, InlineKeyboardMarkup
@@ -15,7 +15,7 @@ from app.telegram.utils import (
 from config.log_setup import get_logger
 from config.settings import get_config
 from services.yandex_schedules.cached_client import CachedYandexSchedules
-from services.yandex_schedules.models.schedule import ScheduleRequest, ScheduleResponse
+from services.yandex_schedules.models.schedule import ScheduleRequest
 
 logger = get_logger(__name__)
 
@@ -36,21 +36,29 @@ async def _fetch_and_format_schedule(station_id: str, page: int = 1) -> Tuple[st
     """
     config = get_config()
     
-    # Create schedule request - fetch many trains to cache and filter
-    today = datetime.now(config.timezone).strftime('%Y-%m-%d')
-    schedule_request = ScheduleRequest(
+    now_local = datetime.now(config.timezone)
+    today = now_local.strftime('%Y-%m-%d')
+
+    base_request = ScheduleRequest(
         station=station_id,
         date=today,
         result_timezone=config.result_timezone,
-        limit=500  # Fetch many trains to cache properly and filter current ones
+        limit=500
     )
-    
-    # Use cached client to fetch schedule
+
+    requests = [base_request]
+    if now_local.hour >= config.schedule_fetch_next_day_after_hour:
+        tomorrow_date = (now_local + timedelta(days=1)).strftime('%Y-%m-%d')
+        requests.append(base_request.model_copy(update={"date": tomorrow_date}))
+
     async with CachedYandexSchedules() as client:
-        schedule_response, was_cached = await client.get_schedule(schedule_request)
-    
-    # Filter to show only upcoming departures from the large cached set
-    filtered_schedule = filter_upcoming_departures(schedule_response.schedule)
+        schedule_response, cache_flags, source_dates = await client.get_schedule_for_dates(requests)
+
+    filtered_schedule = filter_upcoming_departures(
+        schedule_response.schedule,
+        current_time=now_local,
+        window_hours=config.schedule_future_window_hours
+    )
     
     # Paginate the results
     paginated_items, current_page, total_pages = paginate_schedule(filtered_schedule, page)
@@ -63,8 +71,18 @@ async def _fetch_and_format_schedule(station_id: str, page: int = 1) -> Tuple[st
     reply_text = format_schedule_reply(station_id, today, paginated_items, current_page, total_pages)
     
     # Add data source information for transparency
-    data_source = "💾 Data from cache" if was_cached else "🌐 Fresh data from API"
+    all_cached = all(cache_flags)
+    any_cached = any(cache_flags)
+    if all_cached:
+        data_source = "💾 Data from cache"
+    elif any_cached:
+        data_source = "💾/🌐 Mixed cache & API"
+    else:
+        data_source = "🌐 Fresh data from API"
     final_text = f"{reply_text}\n\n{data_source}"
+
+    if len(source_dates) > 1:
+        final_text += f"\n🗓️ Combined dates: {', '.join(source_dates)}"
     
     # Include station information if available
     if schedule_response.station and schedule_response.station.title:

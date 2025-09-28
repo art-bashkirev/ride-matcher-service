@@ -2,7 +2,8 @@
 
 import hashlib
 import json
-from typing import Optional, Type, TypeVar
+from datetime import datetime, timezone
+from typing import Optional, Type, TypeVar, cast
 
 from pydantic import BaseModel
 from redis.asyncio import Redis as AsyncRedis
@@ -181,7 +182,7 @@ class YandexSchedulesCache:
         logger.info("get_schedule_results called with request: %s", request.model_dump())
         cache_key = self._generate_cache_key("schedule", request)
         logger.debug("Requesting cached schedule results with key: %s", cache_key)
-        result = await self._get_cached_response(cache_key, response_type)
+        result = await self._get_cached_schedule(cache_key, response_type)
         if result is not None:
             logger.info("Cache hit for schedule results with key: %s", cache_key)
             return result
@@ -189,7 +190,7 @@ class YandexSchedulesCache:
         alt_cache_key = self._generate_alternate_cache_key("schedule", request)
         if alt_cache_key != cache_key:
             logger.debug("Trying alternate key format for schedule results: %s", alt_cache_key)
-            result = await self._get_cached_response(alt_cache_key, response_type)
+            result = await self._get_cached_schedule(alt_cache_key, response_type)
             if result is not None:
                 logger.info("Cache hit for schedule results with alternate key: %s", alt_cache_key)
                 return result
@@ -206,12 +207,153 @@ class YandexSchedulesCache:
         logger.info("set_schedule_results called with request: %s", request.model_dump())
         cache_key = self._generate_cache_key("schedule", request)
         ttl = self.config.cache_ttl_schedule
-        result = await self._set_cached_response(cache_key, response, ttl)
+        result = await self._set_cached_schedule(cache_key, response, ttl)
         if result:
             logger.info("Schedule results cached successfully for key: %s", cache_key)
         else:
             logger.warning("Failed to cache schedule results for key: %s", cache_key)
         return result
+
+    def _serialize_schedule_response(self, response: ScheduleResponse) -> dict[str, str]:
+        """Normalize schedule response for structured Redis storage."""
+
+        def dumps(value) -> str:
+            return json.dumps(value, ensure_ascii=False)
+
+        schedule_items = [item.model_dump(by_alias=True) for item in response.schedule]
+
+        payload = {
+            "version": "2",
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "date": response.date or "",
+            "station": dumps(response.station.model_dump(by_alias=True)),
+            "pagination": dumps(response.pagination.model_dump(by_alias=True)),
+            "schedule": dumps(schedule_items),
+            "schedule_count": str(len(schedule_items)),
+            "schedule_direction": dumps(response.schedule_direction.model_dump(by_alias=True))
+            if response.schedule_direction is not None else "",
+            "directions": dumps([direction.model_dump(by_alias=True) for direction in response.directions])
+            if response.directions is not None else "",
+            "source_dates": dumps([d for d in [response.date] if d]),
+        }
+
+        return payload
+
+    def _deserialize_schedule_hash(self, data: dict[str, str]) -> dict:
+        """Rebuild a schedule response dict from structured Redis hash data."""
+
+        def loads_optional(value: str | None):
+            if not value:
+                return None
+            return json.loads(value)
+
+        schedule_list = loads_optional(data.get("schedule")) or []
+        pagination = loads_optional(data.get("pagination")) or {
+            "total": len(schedule_list),
+            "limit": len(schedule_list),
+            "offset": 0
+        }
+        station = loads_optional(data.get("station"))
+        if station is None:
+            raise ValueError("Cached schedule entry missing station payload")
+
+        schedule_direction = loads_optional(data.get("schedule_direction"))
+        directions = loads_optional(data.get("directions"))
+
+        response_dict = {
+            "date": data.get("date") or None,
+            "pagination": pagination,
+            "station": station,
+            "schedule": schedule_list,
+            "schedule_direction": schedule_direction,
+            "directions": directions,
+        }
+
+        return response_dict
+
+    async def _get_cached_schedule(
+            self,
+            cache_key: str,
+            response_type: Type[T]
+    ) -> Optional[T]:
+        """Get cached schedule using structured storage with legacy fallback."""
+        logger.debug("_get_cached_schedule called for key: %s", cache_key)
+        redis_client: Optional[AsyncRedis] = None
+
+        try:
+            redis_client = await self._get_redis()
+            key_type = await redis_client.type(cache_key)
+
+            if key_type == "hash":
+                hash_data = await redis_client.hgetall(cache_key)
+                if not hash_data:
+                    logger.debug("Empty hash for key: %s", cache_key)
+                    return None
+                response_dict = self._deserialize_schedule_hash(hash_data)
+                logger.info("Deserialized structured cached schedule for key: %s", cache_key)
+                return response_type(**response_dict)
+
+            if key_type == "string":
+                cached_data = await redis_client.get(cache_key)
+                if cached_data is None:
+                    logger.debug("Cache miss for string key: %s", cache_key)
+                    return None
+                response_dict = json.loads(cached_data)
+                logger.info("Deserialized legacy cached schedule for key: %s", cache_key)
+                return response_type(**response_dict)
+
+            if key_type == "none":
+                logger.debug("Cache key not found: %s", cache_key)
+                return None
+
+            logger.warning("Unsupported Redis type '%s' for key %s", key_type, cache_key)
+            return None
+
+        except RedisError as e:
+            logger.error("Redis error when getting schedule cache key %s: %s", cache_key, e)
+            return None
+        except (ValueError, TypeError) as e:
+            logger.error("Error deserializing cached schedule data for key %s: %s", cache_key, e)
+            if redis_client is not None:
+                try:
+                    await redis_client.delete(cache_key)
+                    logger.warning("Deleted invalid schedule cache entry for key: %s", cache_key)
+                except RedisError:
+                    logger.error("Failed to delete invalid schedule cache entry for key: %s", cache_key)
+            return None
+
+    async def _set_cached_schedule(
+            self,
+            cache_key: str,
+            response: ScheduleResponse,
+            ttl: int
+    ) -> bool:
+        """Store a schedule response using structured Redis hash."""
+        logger.debug("_set_cached_schedule called for key: %s, ttl: %d", cache_key, ttl)
+        redis_client: Optional[AsyncRedis] = None
+
+        try:
+            redis_client = await self._get_redis()
+            payload = self._serialize_schedule_response(response)
+
+            # Remove legacy string entry to avoid type conflicts
+            await redis_client.delete(cache_key)
+
+            await redis_client.hset(cache_key, mapping=payload)  # type: ignore[arg-type]
+            expire_result = await redis_client.expire(cache_key, ttl)
+
+            if not expire_result:
+                logger.warning("Failed to set TTL for schedule cache key: %s", cache_key)
+
+            logger.info("Structured schedule cached for key: %s (TTL: %ds)", cache_key, ttl)
+            return True
+
+        except RedisError as e:
+            logger.error("Redis error when setting schedule cache key %s: %s", cache_key, e)
+            return False
+        except Exception as e:
+            logger.error("Unexpected error when caching schedule key %s: %s", cache_key, e)
+            return False
 
     async def _get_cached_response(
             self,
@@ -236,7 +378,7 @@ class YandexSchedulesCache:
         except RedisError as e:
             logger.error("Redis error when getting cache key %s: %s", cache_key, e)
             return None
-        except (json.JSONDecodeError, ValueError) as e:
+        except ValueError as e:
             logger.error("Error deserializing cached data for key %s: %s", cache_key, e)
             # Remove corrupted cache entry
             try:
@@ -327,7 +469,7 @@ class YandexSchedulesCache:
     async def shutdown(self):
         """Properly close Redis connection on application shutdown."""
         if self._redis and not self._redis.connection_pool.connection_kwargs.get('closed', False):
-            await self._redis.aclose()
+            await self._redis.close()
             self._redis = None
             logger.info("Redis connection closed gracefully")
 

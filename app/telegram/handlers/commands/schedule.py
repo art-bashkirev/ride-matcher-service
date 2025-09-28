@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -52,24 +52,39 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         config = get_config()
 
-        # Create schedule request - fetch many trains to cache and filter
-        today = datetime.now(config.timezone).strftime('%Y-%m-%d')
-        schedule_request = ScheduleRequest(
+        now_local = datetime.now(config.timezone)
+        today = now_local.strftime('%Y-%m-%d')
+
+        base_request = ScheduleRequest(
             station=station_id,
             date=today,
             result_timezone=config.result_timezone,
             limit=500  # Fetch many trains to cache properly and filter current ones
         )
 
-        # Use cached client to fetch schedule
+        requests = [base_request]
+
+        if now_local.hour >= config.schedule_fetch_next_day_after_hour:
+            tomorrow_date = (now_local + timedelta(days=1)).strftime('%Y-%m-%d')
+            requests.append(base_request.model_copy(update={"date": tomorrow_date}))
+
         async with CachedYandexSchedules() as client:
-            schedule_response, was_cached = await client.get_schedule(schedule_request)
+            schedule_response, cache_flags, source_dates = await client.get_schedule_for_dates(requests)
 
-            # Set data source based on actual cache hit
-            data_source = "💾 Data from cache" if was_cached else "🌐 Fresh data from API"
+        all_cached = all(cache_flags)
+        any_cached = any(cache_flags)
+        if all_cached:
+            data_source = "💾 Data from cache"
+        elif any_cached:
+            data_source = "💾/🌐 Mixed cache & API"
+        else:
+            data_source = "🌐 Fresh data from API"
 
-        # Filter to show only upcoming departures from the large cached set
-        filtered_schedule = filter_upcoming_departures(schedule_response.schedule)
+        filtered_schedule = filter_upcoming_departures(
+            schedule_response.schedule,
+            current_time=now_local,
+            window_hours=config.schedule_future_window_hours
+        )
 
         # Paginate the results (page 1 by default)
         paginated_items, current_page, total_pages = paginate_schedule(filtered_schedule, page=1)
@@ -84,6 +99,9 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Add data source information for transparency
         final_text = f"{reply_text}\n\n{data_source}"
+
+        if len(source_dates) > 1:
+            final_text += f"\n🗓️ Combined dates: {', '.join(source_dates)}"
 
         # Include station information if available
         if schedule_response.station and schedule_response.station.title:
@@ -103,7 +121,10 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     station_id, username)
 
     except Exception as e:
-        logger.error("Error fetching schedule for station %s: %s", station_id, str(e))
+        logger.error("Error fetching schedule for station %s: %s (%s)", 
+                    station_id, str(e) or "No error message", type(e).__name__)
+        import traceback
+        logger.error("Full traceback: %s", traceback.format_exc())
 
         error_message = (
             f"❌ Error fetching schedule for station {station_id}\n"

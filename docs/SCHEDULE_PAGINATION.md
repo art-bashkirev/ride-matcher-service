@@ -90,9 +90,16 @@ Bot: 📅 Schedule for station s9600213 (Moscow Yaroslavsky) on 2024-01-01 (Page
 
 ### Future-Only Filtering
 
-- Compares departure times with current UTC time
-- Only shows departures that are in the future
+- Compares departure times with the configured result timezone
+- Applies a configurable future window (default **8 hours**, via `SCHEDULE_FUTURE_WINDOW_HOURS`)
+- Only shows departures that are inside this window
 - Invalid times are excluded for safety
+
+### Cross-Day Coverage
+
+- After the local hour reaches `SCHEDULE_FETCH_NEXT_DAY_AFTER_HOUR` (default **22:00**), the bot fetches both today and tomorrow
+- Results are merged and automatically tagged with a **“(next day)”** suffix when applicable
+- The footer lists all source dates (e.g., `Combined dates: 2025-09-28, 2025-09-29`)
 
 ### Caching Integration
 

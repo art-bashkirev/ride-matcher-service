@@ -1,11 +1,10 @@
-import os
-from typing import List, Union
-
+import logging
 import os
 from typing import List, Union
 
 import aiohttp
 
+from config.log_setup import get_logger
 from .models.carrier import Carrier, CarrierRequest
 from .models.copyright import CopyrightResponse
 from .models.schedule import ScheduleRequest, ScheduleResponse
@@ -23,6 +22,7 @@ class YandexSchedules:
             raise RuntimeError("YANDEX_SCHEDULES_API_KEY not provided")
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self._session: aiohttp.ClientSession | None = None
+        self.logger = get_logger(__name__)
 
     async def start(self):
         if not self._session or self._session.closed:
@@ -50,17 +50,20 @@ class YandexSchedules:
         async with self._session.get(endpoint, params=params) as resp:
             resp.raise_for_status()
 
-            # Check the response headers to confirm the issue
-            print(f"Status: {resp.status}")
-            print(f"Content-Type: {resp.headers.get('Content-Type')}")
-
             try:
                 # Tell aiohttp to ignore the Content-Type header and parse the body as JSON.
                 data = await resp.json(content_type=None)
                 return data
-            except aiohttp.ContentTypeError as e:
-                # This block will now likely not be triggered
-                print(f"Failed to decode JSON: {e}")
+            except Exception as e:
+                # Log the response details for debugging
+                self.logger.error(f"Failed to parse JSON response from {endpoint}: {e}")
+                self.logger.error(f"Response status: {resp.status}, headers: {dict(resp.headers)}")
+                # Try to get the raw text
+                try:
+                    raw_text = await resp.text()
+                    self.logger.error(f"Raw response text: {raw_text[:500]}...")
+                except Exception:
+                    self.logger.error("Could not read raw response text")
                 raise
 
     async def get_copyright(self) -> CopyrightResponse:
