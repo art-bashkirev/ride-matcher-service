@@ -25,4 +25,4 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # For registry
 slug = "profile"
-function = CommandHandler("profile", profile_command)
+function = profile_command
