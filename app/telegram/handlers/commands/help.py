@@ -13,4 +13,4 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
     logger.info("User %s requested help", update.effective_user.username if update.effective_user else "unknown")
-    await update.message.reply_text("Available commands: /start, /help, /schedule")
+    await update.message.reply_text("Available commands: /start, /help, /schedule, /stats")

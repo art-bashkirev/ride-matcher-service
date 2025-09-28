@@ -42,11 +42,6 @@ class Config(BaseSettings):
     cache_ttl_schedule: int = Field(default=1800)  # 30 minutes for schedule results
     cache_readable_keys: bool = Field(default=False)  # Use readable keys instead of hashes
 
-    # MongoDB configuration for stations storage
-    mongodb_url: str = Field(default="mongodb://localhost:27017")
-    mongodb_database: str = Field(default="ride_matcher")
-    mongodb_stations_collection: str = Field(default="stations")
-
     @field_validator('result_timezone')
     def validate_timezone(cls, v):
         """Validate timezone string."""

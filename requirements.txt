@@ -1,7 +1,5 @@
-pymongo[snappy,zstd,encryption]
 redis-om
 aiohttp[speedups]
-motor
 
 python-telegram-bot
 python-dotenv
