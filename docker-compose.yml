@@ -12,7 +12,7 @@ services:
       - REDIS_USERNAME=  # Empty for local Redis (no auth needed)
       - REDIS_PASSWORD=  # Empty for local Redis (no auth needed)
       - HTTP_PORT=8080
-      - CACHE_TTL_SECONDS=21600  # 6 hour cache TTL
+      - CACHE_TTL_SCHEDULE=21600  # 6 hour cache TTL
       - CACHE_READABLE_KEYS=true  # Enable readable cache keys for debugging
     ports:
       - "8080:8080"
@@ -22,6 +22,8 @@ services:
       - .:/app
     command: python main.py
     restart: unless-stopped
+    # Note: PostgreSQL and MongoDB are external services (Supabase and MongoDB Atlas)
+    # Ensure they are accessible from the container
 
 
   redis:

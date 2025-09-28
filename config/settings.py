@@ -37,6 +37,19 @@ class Config(BaseSettings):
     redis_username: str | None = Field(default=None)
     redis_password: str | None = Field(default=None)
 
+    # Database URIs
+    postgresql_uri: str | None = Field(default=None)
+    mongodb_host: str | None = Field(default=None)
+    mongodb_user: str | None = Field(default=None)
+    mongodb_password: str | None = Field(default=None)
+
+    @field_validator('postgresql_uri')
+    def fix_postgres_scheme(cls, v):
+        """Fix PostgreSQL URI scheme for Tortoise ORM."""
+        if v and v.startswith('postgresql://'):
+            return v.replace('postgresql://', 'postgres://', 1)
+        return v
+
     # Cache configuration
     cache_ttl_search: int = Field(default=3600)  # 1 hour for search results
     cache_ttl_schedule: int = Field(default=1800)  # 30 minutes for schedule results

@@ -5,7 +5,7 @@ import importlib
 import pkgutil
 from typing import List
 
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ConversationHandler, filters
 
 from app.telegram.handlers.callbacks import handle_schedule_pagination, handle_noop_callback, handle_schedule_from_search
 from app.telegram.handlers.commands.echo_text import function as echo_text
@@ -27,9 +27,13 @@ class HandlerRegistry:
             ("noop", handle_noop_callback),
         ]
 
+        # Conversation handlers
+        self._conversation_handlers: List[ConversationHandler] = []
+
     def register_all(self, app: Application) -> None:
         """Register all handlers with the application."""
         self._register_command_handlers(app)
+        self._register_conversation_handlers(app)
         self._register_callback_handlers(app)
         self._register_message_handlers(app)
 
@@ -44,7 +48,16 @@ class HandlerRegistry:
             slug = getattr(mod, "slug", None)
             func = getattr(mod, "function", None)
             if slug and func:
-                app.add_handler(CommandHandler(slug, func))
+                # Check if it's a ConversationHandler
+                if isinstance(func, ConversationHandler):
+                    self._conversation_handlers.append(func)
+                else:
+                    app.add_handler(CommandHandler(slug, func))
+
+    def _register_conversation_handlers(self, app: Application) -> None:
+        """Register conversation handlers."""
+        for handler in self._conversation_handlers:
+            app.add_handler(handler)
 
     def _register_message_handlers(self, app: Application) -> None:
         for filter_obj, handler in self._message_handlers:
