@@ -88,3 +88,19 @@ class UserService:
     async def get_user(telegram_id: int) -> Optional[User]:
         """Get user by telegram ID."""
         return await User.get_or_none(telegram_id=telegram_id)
+
+    @staticmethod
+    async def is_user_admin(telegram_id: int) -> bool:
+        """Check if user has admin privileges."""
+        user = await User.get_or_none(telegram_id=telegram_id)
+        return user.is_admin if user else False
+
+    @staticmethod
+    async def set_user_admin(telegram_id: int, is_admin: bool) -> Optional[User]:
+        """Set user's admin status."""
+        user = await User.get_or_none(telegram_id=telegram_id)
+        if user:
+            user.is_admin = is_admin
+            await user.save()
+            logger.info("Updated admin status for user %s to %s", telegram_id, is_admin)
+        return user
