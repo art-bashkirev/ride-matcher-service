@@ -22,6 +22,10 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stats = await client.get_cache_stats()
 
     await update.message.reply_html(
-        rf"Hi {mention}! Here are the cache stats: {stats}",
+        f"📊 **Cache Statistics**\n"
+        f"══════════════════════\n\n"
+        f"Hi {mention}! Here are the current cache statistics:\n\n"
+        f"📈 **Stats:** {stats}\n\n"
+        f"💡 *Cache helps improve response times by storing frequently accessed data.*",
         reply_markup=ForceReply(selective=True)
     )

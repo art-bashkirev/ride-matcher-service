@@ -29,8 +29,15 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not context.args:
         await update.message.reply_text(
-            "Please provide a station ID, e.g. /schedule s9600213\n"
-            "Station ID format: 's' followed by 7 digits"
+            "🚂 **Schedule Command Help**\n"
+            "══════════════════════════\n\n"
+            "❓ **Missing Station ID**\n\n"
+            "📋 **Usage:**\n"
+            "`/schedule s9600213`\n\n"
+            "📝 **Format:**\n"
+            "• Station ID: 's' + 7 digits\n"
+            "• Example: s9600213\n\n"
+            "💡 **Tip:** Use /setstations to configure your stations first!"
         )
         logger.info("User %s requested schedule without arguments", username)
         return
@@ -38,14 +45,19 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     station_id = context.args[0]
     if not is_valid_station_id(station_id):
         await update.message.reply_text(
-            f"❌ Invalid station ID format: {station_id}\n"
-            "Expected format: 's' followed by 7 digits (e.g., s9600213)"
+            f"❌ **Invalid Station ID Format**\n"
+            f"═══════════════════════════════\n\n"
+            f"🔍 **You entered:** `{station_id}`\n\n"
+            f"✅ **Expected format:**\n"
+            f"• 's' followed by exactly 7 digits\n"
+            f"• Example: s9600213\n\n"
+            f"💡 **Try again with correct format!**"
         )
         logger.info("User %s requested schedule with parsing error", username)
         return
 
     # Show loading message
-    loading_message = await update.message.reply_text("⏳ Fetching schedule...")
+    loading_message = await update.message.reply_text("⏳ **Fetching schedule data...**\n\n🔄 Please wait while I get the latest information...")
 
     logger.info("Trying to serve schedule to User %s ", username)
 

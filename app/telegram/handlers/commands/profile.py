@@ -14,12 +14,15 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("No profile found. Please set your stations first with /setstations.")
         return
     msg = (
-        f"👤 Profile info:\n"
-        f"Username: {db_user.username or '-'}\n"
-        f"First name: {db_user.first_name or '-'}\n"
-        f"Last name: {db_user.last_name or '-'}\n"
-        f"Base station: {db_user.base_station_title or '-'} ({db_user.base_station_code or '-'})\n"
-        f"Destination: {db_user.destination_title or '-'} ({db_user.destination_code or '-'})"
+        f"👤 **Profile Information**\n"
+        f"═══════════════════════\n\n"
+        f"🏷️ **Username:** {db_user.username or 'Not set'}\n"
+        f"👨‍💼 **First Name:** {db_user.first_name or 'Not set'}\n"
+        f"👨‍💼 **Last Name:** {db_user.last_name or 'Not set'}\n\n"
+        f"📍 **Base Station:** {db_user.base_station_title or 'Not set'}\n"
+        f"     🔗 Code: {db_user.base_station_code or 'Not set'}\n\n"
+        f"🎯 **Destination:** {db_user.destination_title or 'Not set'}\n"
+        f"     🔗 Code: {db_user.destination_code or 'Not set'}"
     )
     await update.message.reply_text(msg)
 

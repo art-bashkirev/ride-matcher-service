@@ -83,9 +83,14 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     logger.info("User %s entering base station selection", user.username if user.username else user.id)
 
     await update.message.reply_text(
-        "Let's set up your base station and destination.\n\n"
-        "First, what's your base station? (the station you usually start from)\n"
-        "Please enter the station name or code:"
+        "🚂 **Station Setup Wizard**\n"
+        "═══════════════════════════\n\n"
+        "🏠 **Step 1: Base Station**\n\n"
+        "Let's configure your base station (where you usually start your journey).\n\n"
+        "💡 **How to enter:**\n"
+        "• Station name (e.g., 'Moscow Central')\n"
+        "• Station code (e.g., 's1234567')\n\n"
+        "📝 Please type your base station name or code:"
     )
     return CHOOSING_BASE
 
@@ -210,17 +215,29 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
                 dest_code,
             )
             await query.edit_message_text(
-                f"Please confirm your settings:\n\n"
-                f"Base station: {title} ({code}) - {settlement_title}\n"
-                f"Destination: {dest_title} ({dest_code}) - {dest_settlement}\n\n"
-                "Is this correct?",
+                f"✅ **Confirm Your Station Settings**\n"
+                f"═══════════════════════════════\n\n"
+                f"🏠 **Base Station:**\n"
+                f"     📍 {title}\n"
+                f"     🔗 Code: {code}\n"
+                f"     🌍 Location: {settlement_title}\n\n"
+                f"🎯 **Destination Station:**\n"
+                f"     📍 {dest_title}\n"
+                f"     🔗 Code: {dest_code}\n"
+                f"     🌍 Location: {dest_settlement}\n\n"
+                f"❓ **Is this information correct?**",
                 reply_markup=reply_markup,
             )
             return CONFIRM
         await query.edit_message_text(
-            f"Base station set to: {title} ({code}) - {settlement_title}\n\n"
-            "Now, what's your destination station? (where you change from suburban to metro)\n"
-            "Please enter the station name or code:"
+            f"🏠 **Base Station Set Successfully!**\n"
+            f"═══════════════════════════════════\n\n"
+            f"📍 **Station:** {title}\n"
+            f"🔗 **Code:** {code}\n"
+            f"🌍 **Location:** {settlement_title}\n\n"
+            f"🎯 **Next Step:** Please enter your destination station\n"
+            f"(Where you transfer from suburban to metro)\n\n"
+            f"💡 **Tip:** Enter the station name or code below"
         )
         return CHOOSING_DEST
     elif station_type == "dest":
@@ -241,10 +258,17 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            f"Please confirm your settings:\n\n"
-            f"Base station: {base_title} ({base_code}) - {base_settlement}\n"
-            f"Destination: {dest_title} ({dest_code}) - {dest_settlement}\n\n"
-            "Is this correct?",
+            f"✅ **Confirm Your Station Settings**\n"
+            f"═══════════════════════════════\n\n"
+            f"🏠 **Base Station:**\n"
+            f"     📍 {base_title}\n"
+            f"     🔗 Code: {base_code}\n"
+            f"     🌍 Location: {base_settlement}\n\n"
+            f"🎯 **Destination Station:**\n"
+            f"     📍 {dest_title}\n"
+            f"     🔗 Code: {dest_code}\n"
+            f"     🌍 Location: {dest_settlement}\n\n"
+            f"❓ **Is this information correct?**",
             reply_markup=reply_markup
         )
         return CONFIRM
@@ -375,9 +399,15 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.info("User %s successfully saved stations: base=%s (%s), dest=%s (%s)", 
                    user_id, base_title, base_code, dest_title, dest_code)
         await query.edit_message_text(
-            "✅ Stations saved successfully!\n\n"
-            f"Base: {base_title} ({base_code})\n"
-            f"Destination: {dest_title} ({dest_code})"
+            f"✅ **Stations Saved Successfully!**\n"
+            f"══════════════════════════════\n\n"
+            f"🏠 **Base Station:**\n"
+            f"     📍 {base_title}\n"
+            f"     🔗 {base_code}\n\n"
+            f"🎯 **Destination Station:**\n"
+            f"     📍 {dest_title}\n"
+            f"     🔗 {dest_code}\n\n"
+            f"🎉 Your stations have been saved and are ready to use!"
         )
     except Exception as e:
         logger.error("User %s failed to save user stations: %s", user_id, e)

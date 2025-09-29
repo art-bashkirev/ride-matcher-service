@@ -51,7 +51,17 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
                           total_pages: int = 1) -> str:
     """Format schedule data for telegram response."""
     if not schedule:
-        return f"📅 No departures found for station {station_id} on {date}"
+        return (
+            f"📅 **No Departures Found**\n"
+            f"════════════════════════\n\n"
+            f"🚉 **Station:** {station_id}\n"
+            f"📅 **Date:** {date}\n\n"
+            f"❌ No scheduled departures found\n\n"
+            f"💡 **Suggestions:**\n"
+            f"• Try a different date\n"
+            f"• Check the station ID\n"
+            f"• Contact support if needed"
+        )
 
     # Get station name from first schedule item if available
     station_name = ""
@@ -64,8 +74,13 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
             station_name = f" ({parts[0]})"
 
     # Add pagination info to header if multiple pages
-    page_info = f" (Page {current_page}/{total_pages})" if total_pages > 1 else ""
-    reply_text = f"📅 Schedule for station {station_id}{station_name} on {date}{page_info}:\n\n"
+    page_info = f"📄 **Page {current_page}/{total_pages}**\n" if total_pages > 1 else ""
+    reply_text = (
+        f"📅 **Schedule for {date}**\n"
+        f"════════════════════════════\n\n"
+        f"🚉 **Station:** {station_id}{station_name}\n"
+        f"{page_info}\n"
+    )
 
     # Show all items in the current page (no longer limit to 10 here)
     for i, schedule_item in enumerate(schedule):
@@ -77,25 +92,25 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
                 departure_dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
                 arrival_time = arrival_dt.strftime('%H:%M')
                 departure_time = departure_dt.strftime('%H:%M')
-                time_info = f"Arrives: {arrival_time}, Departs: {departure_time}"
+                time_info = f"⏰ Arr: {arrival_time}  •  Dep: {departure_time}"
             except (ValueError, AttributeError):
-                time_info = f"Arrives: {schedule_item.arrival}, Departs: {schedule_item.departure}"
+                time_info = f"⏰ Arr: {schedule_item.arrival}  •  Dep: {schedule_item.departure}"
         elif schedule_item.departure:
             try:
                 dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
                 departure_time = dt.strftime('%H:%M')
-                time_info = f"Departs: {departure_time}"
+                time_info = f"⏰ Departure: {departure_time}"
             except (ValueError, AttributeError):
-                time_info = f"Departs: {schedule_item.departure}"
+                time_info = f"⏰ Departure: {schedule_item.departure}"
         elif schedule_item.arrival:
             try:
                 dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
                 arrival_time = dt.strftime('%H:%M')
-                time_info = f"Arrives: {arrival_time}"
+                time_info = f"⏰ Arrival: {arrival_time}"
             except (ValueError, AttributeError):
-                time_info = f"Arrives: {schedule_item.arrival}"
+                time_info = f"⏰ Arrival: {schedule_item.arrival}"
         else:
-            time_info = "N/A"
+            time_info = "⏰ Time: N/A"
 
         # Get thread information
         thread_info = "Unknown"
@@ -105,23 +120,25 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
                 thread_info = f"{schedule_item.thread.number}"
                 if schedule_item.thread.title:
                     # Add full title without shortening
-                    thread_info += f" ({schedule_item.thread.title})"
+                    thread_info += f" - {schedule_item.thread.title}"
             else:
                 thread_info = schedule_item.thread.title or "Unknown"
 
         # Format platform information
         platform_info = ""
         if schedule_item.platform:
-            platform_info = f" (Platform {schedule_item.platform})"
+            platform_info = f"  🚉 Platform {schedule_item.platform}"
 
+        # Enhanced formatting with better structure and spacing
         reply_text += f"🚂 {thread_info}\n"
-        reply_text += f"🕒 {time_info}{platform_info}\n"
+        reply_text += f"{time_info}{platform_info}\n"
 
         # Add stops information if available and not too long
         if schedule_item.stops and len(schedule_item.stops) < 50:
             reply_text += f"📍 Stops: {schedule_item.stops}\n"
 
-        reply_text += "\n"
+        # Add visual separator between entries for better readability
+        reply_text += "─" * 25 + "\n\n"
 
     return reply_text.strip()
 
