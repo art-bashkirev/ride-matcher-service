@@ -10,6 +10,7 @@ from telegram.ext import (
     filters,
 )
 from typing import Dict, Any
+from types import SimpleNamespace
 
 from config.log_setup import get_logger
 from services.database.user_service import UserService
@@ -44,7 +45,6 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data["last_name"] = getattr(user, "last_name", None)
 
     # Check if user already has stations set
-    from types import SimpleNamespace
     db_user = await UserService.get_user(user.id)
     if db_user:
         base_exists = bool(getattr(db_user, 'base_station_code', None))
@@ -54,7 +54,6 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text("You have already set your stations. Updating is not allowed. Type /cancel to cancel.")
             return ConversationHandler.END
         elif base_exists and not dest_exists:
-            from types import SimpleNamespace
             context.user_data['base_station'] = SimpleNamespace(
                 code=db_user.base_station_code,
                 title=db_user.base_station_title,
@@ -68,7 +67,6 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             )
             return CHOOSING_DEST
         elif dest_exists and not base_exists:
-            from types import SimpleNamespace
             context.user_data['destination_station'] = SimpleNamespace(
                 code=db_user.destination_code,
                 title=db_user.destination_title,
@@ -193,6 +191,32 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         code = getattr(station, "code", "-") if hasattr(station, "code") else "-"
         settlement_title = getattr(station, "settlement_title", "-") if hasattr(station, "settlement_title") else "-"
         logger.info("User %s set base station: %s (%s) - %s", user_id, title, code, settlement_title)
+        existing_dest = context.user_data.get("destination_station") if context.user_data else None
+        if existing_dest:
+            dest_title = getattr(existing_dest, "title", "-") if hasattr(existing_dest, "title") else "-"
+            dest_code = getattr(existing_dest, "code", "-") if hasattr(existing_dest, "code") else "-"
+            dest_settlement = getattr(existing_dest, "settlement_title", "-") if hasattr(existing_dest, "settlement_title") else "-"
+            keyboard = [
+                [InlineKeyboardButton("Yes, save", callback_data=f"{STATION_CONFIRM}yes")],
+                [InlineKeyboardButton("No, start over", callback_data=f"{STATION_CONFIRM}no")],
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            logger.info(
+                "User %s entering confirmation with base: %s (%s), dest: %s (%s)",
+                user_id,
+                title,
+                code,
+                dest_title,
+                dest_code,
+            )
+            await query.edit_message_text(
+                f"Please confirm your settings:\n\n"
+                f"Base station: {title} ({code}) - {settlement_title}\n"
+                f"Destination: {dest_title} ({dest_code}) - {dest_settlement}\n\n"
+                "Is this correct?",
+                reply_markup=reply_markup,
+            )
+            return CONFIRM
         await query.edit_message_text(
             f"Base station set to: {title} ({code}) - {settlement_title}\n\n"
             "Now, what's your destination station? (where you change from suburban to metro)\n"
