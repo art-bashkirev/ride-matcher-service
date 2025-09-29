@@ -14,6 +14,8 @@ services:
       - HTTP_PORT=8080
       - CACHE_TTL_SCHEDULE=21600  # 6 hour cache TTL
       - CACHE_READABLE_KEYS=true  # Enable readable cache keys for debugging
+      - DATABASE_URL=postgresql://user:password@postgres:5432/mydb
+      - MONGO_URL=mongodb://mongo:27017
     ports:
       - "8080:8080"
     depends_on:
@@ -22,8 +24,26 @@ services:
       - .:/app
     command: python main.py
     restart: unless-stopped
-    # Note: PostgreSQL and MongoDB are external services (Supabase and MongoDB Atlas)
-    # Ensure they are accessible from the container
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+  
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    restart: unless-stopped
 
 
   redis:
@@ -36,3 +56,5 @@ services:
 
 volumes:
   redis_data:
+  pgdata:
+  mongodata:

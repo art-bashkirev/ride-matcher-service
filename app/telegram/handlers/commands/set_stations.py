@@ -25,6 +25,9 @@ STATION_SELECT = "station_select:"
 STATION_CONFIRM = "station_confirm:"
 
 
+## Insert helper function for creating station objects
+
+
 async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the set stations conversation."""
     user = update.effective_user
@@ -43,12 +46,23 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Check if user already has stations set
     from services.database.user_service import UserService
     db_user = await UserService.get_user(user.id)
-    if db_user and db_user.base_station_code and db_user.destination_code:
-        logger.info("User %s already has stations set, preventing update", user.username if user.username else user.id)
-        await update.message.reply_text(
-            "You have already set your stations. Updating is not allowed."
-        )
-        return ConversationHandler.END
+    if db_user:
+        base_exists = bool(getattr(db_user, 'base_station_code', None))
+        dest_exists = bool(getattr(db_user, 'destination_code', None))
+        if base_exists and dest_exists:
+            logger.info("User %s already has stations set, preventing update", user.username if user.username else user.id)
+            await update.message.reply_text("You have already set your stations. Updating is not allowed. Type /cancel to cancel.")
+            return ConversationHandler.END
+        elif base_exists and not dest_exists:
+            logger.info("User %s has base station set but missing destination, continuing to set destination", user.username if user.username else user.id)
+            context.user_data['base_station'] = None  # Retain existing base; force new destination
+            await update.message.reply_text("You already have a base station set. Please enter your destination station. Type /cancel to cancel.")
+            return CHOOSING_DEST
+        elif dest_exists and not base_exists:
+            logger.info("User %s has destination station set but missing base, continuing to set base station", user.username if user.username else user.id)
+            context.user_data['destination_station'] = None  # Retain existing destination; force new base
+            await update.message.reply_text("You already have a destination station set. Please enter your base station. Type /cancel to cancel.")
+            return CHOOSING_BASE
 
     logger.info("User %s entering base station selection", user.username if user.username else user.id)
 
@@ -181,6 +195,8 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         )
         return CONFIRM
 
+    return ConversationHandler.END
+
 
 async def handle_destination_station(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle destination station input."""
@@ -309,7 +325,13 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.effective_user
     user_id = user.username if user and user.username else (user.id if user else "unknown")
     logger.info("User %s cancelled set stations conversation", user_id)
-    await update.message.reply_text("Operation cancelled.")
+    if update.message is not None:
+        await update.message.reply_text("Operation cancelled. Type /cancel to exit.")
+    elif update.callback_query is not None:
+        await update.callback_query.edit_message_text("Operation cancelled. Type /cancel to exit.")
+    else:
+        # Fallback if neither message nor callback_query is available
+        pass
     return ConversationHandler.END
 
 
