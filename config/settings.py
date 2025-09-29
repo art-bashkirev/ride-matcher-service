@@ -16,6 +16,7 @@ class Config(BaseSettings):
 
     # API Configuration
     yandex_schedules_api_key: str | None = Field(default=None)
+    nvidia_api_key: str | None = Field(default=None)
 
     # Application Configuration
     result_timezone: str = Field(default="Europe/Moscow")
