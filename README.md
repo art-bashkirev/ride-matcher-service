@@ -9,6 +9,25 @@ Concurrent aiohttp API server + Telegram bot service.
 * `TelegramBotService` wraps `python-telegram-bot` with clean async lifecycle (only starts if `TELEGRAM_BOT_TOKEN`
   present).
 
+## Features
+
+### AI Chat Bot Mode
+The service includes an AI chat bot feature with admin-only access:
+
+- **Admin Management**: Only users with `is_admin=true` in the database can use AI features
+- **Global Flag**: AI mode can be enabled/disabled globally via Redis flag (no TTL)
+- **NVIDIA AI Integration**: Uses NVIDIA's AI API for chat completions
+- **Telegram Commands**:
+  - `/ai <prompt>` - Chat with AI (admin only)
+  - `/aimode [enable|disable|status]` - Manage AI mode (admin only)  
+  - `/setadmin <telegram_id> <true|false>` - Grant/revoke admin privileges (admin only)
+
+### Other Features
+- Yandex Schedules API integration with caching
+- User station preferences management
+- Health check endpoint
+- Structured logging with request IDs
+
 ## Running
 
 Set environment variables as needed (create a `.env` file for local dev):
@@ -98,11 +117,14 @@ This project uses Pydantic BaseSettings for configuration management.
 ### Environment Variables
 
 - `YANDEX_SCHEDULES_API_KEY` (required): Your Yandex Schedules API key
+- `NVIDIA_AI_API_KEY` (optional): NVIDIA AI API key for AI chat bot functionality
 - `RESULT_TIMEZONE` (optional): Timezone for results (default: "Europe/Moscow")
 - `ENVIRONMENT` (optional): Environment name (default: "development")
 - `LOG_LEVEL` (optional): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) default: INFO
 - `HTTP_HOST` / `HTTP_PORT` (optional): Host/port for health & future HTTP endpoints (defaults: 0.0.0.0:8000)
 - `TELEGRAM_BOT_TOKEN` (optional): If provided, the Telegram bot will start; omitted disables bot
+- `REDIS_HOST` / `REDIS_PORT` (optional): Redis connection for caching and AI flag storage (defaults: localhost:6379)
+- `POSTGRESQL_URI` (optional): PostgreSQL database connection for user management
 
 ### Running (HTTP health + Telegram bot)
 
