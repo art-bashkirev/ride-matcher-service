@@ -54,6 +54,7 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text("You have already set your stations. Updating is not allowed. Type /cancel to cancel.")
             return ConversationHandler.END
         elif base_exists and not dest_exists:
+            from types import SimpleNamespace
             context.user_data['base_station'] = SimpleNamespace(
                 code=db_user.base_station_code,
                 title=db_user.base_station_title,
@@ -61,9 +62,13 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 direction=''
             )
             logger.info("User %s has base station set but missing destination, prompting for destination", user.username if user.username else user.id)
-            await update.message.reply_text("Your base station is already set. Please enter your destination station. Type /cancel to cancel.")
+            await update.message.reply_text(
+                f"We have your base station set to: {db_user.base_station_title} ({db_user.base_station_code}).\n"
+                "Please enter your destination station. Type /cancel to cancel."
+            )
             return CHOOSING_DEST
         elif dest_exists and not base_exists:
+            from types import SimpleNamespace
             context.user_data['destination_station'] = SimpleNamespace(
                 code=db_user.destination_code,
                 title=db_user.destination_title,
@@ -71,7 +76,10 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 direction=''
             )
             logger.info("User %s has destination station set but missing base, prompting for base station", user.username if user.username else user.id)
-            await update.message.reply_text("Your destination station is already set. Please enter your base station. Type /cancel to cancel.")
+            await update.message.reply_text(
+                f"We have your destination station set to: {db_user.destination_title} ({db_user.destination_code}).\n"
+                "Please enter your base station. Type /cancel to cancel."
+            )
             return CHOOSING_BASE
 
     logger.info("User %s entering base station selection", user.username if user.username else user.id)
