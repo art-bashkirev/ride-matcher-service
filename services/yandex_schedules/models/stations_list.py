@@ -9,12 +9,12 @@ class StationsListRequest(BaseModel):
 
 class Station(BaseModel):
     direction: str | None = None
-    codes: SearchCodes
-    station_type: StationType | None
-    title: str
+    codes: SearchCodes | None = None
+    station_type: StationType | None = None
+    title: str | None = None
     longitude: float | str | None = None
     latitude: float | str | None = None
-    transport_type: TransportType
+    transport_type: TransportType | None = None
 
     @field_validator("station_type", mode="before")
     def empty_str_to_unknown(cls, v):
@@ -24,22 +24,22 @@ class Station(BaseModel):
 
 
 class Settlement(BaseModel):
-    title: str
-    codes: SearchCodes
-    stations: list[Station]
+    title: str | None = None
+    codes: SearchCodes | None = None
+    stations: list[Station] | None = None
 
 
 class Region(BaseModel):
-    settlements: list[Settlement]
-    codes: SearchCodes
-    title: str
+    settlements: list[Settlement] | None = None
+    codes: SearchCodes | None = None
+    title: str | None = None
 
 
 class Country(BaseModel):
-    regions: list[Region]
-    codes: SearchCodes
-    title: str
+    regions: list[Region] | None = None
+    codes: SearchCodes | None = None
+    title: str | None = None
 
 
 class StationsListResponse(BaseModel):
-    countries: list[Country]
+    countries: list[Country] | None = None

@@ -15,8 +15,8 @@ class SearchCodes(BaseModel):
 
 
 class Pagination(BaseModel):
-    total: int
-    limit: int
+    total: int | None = None
+    limit: int | None = None
     offset: int | None = None
 
 
@@ -40,9 +40,9 @@ class ThreadFilter(Enum):
 
 
 class TransportSubtype(BaseModel):
-    color: str
-    code: str
-    title: str
+    color: str | None = None
+    code: str | None = None
+    title: str | None = None
 
 
 class TransportType(Enum):

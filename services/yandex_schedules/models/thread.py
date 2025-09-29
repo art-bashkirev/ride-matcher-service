@@ -13,14 +13,14 @@ class ThreadCodes(BaseModel):
 
 
 class Station(BaseModel):
-    codes: ThreadCodes
-    title: str | None
-    station_type: StationType | None
-    station_type_name: str | None
-    popular_title: str | None
-    short_title: str | None
-    code: str | None
-    type: str | None
+    codes: ThreadCodes | None = None
+    title: str | None = None
+    station_type: StationType | None = None
+    station_type_name: str | None = None
+    popular_title: str | None = None
+    short_title: str | None = None
+    code: str | None = None
+    type: str | None = None
 
 
 class Stop(BaseModel):
@@ -48,7 +48,7 @@ class Thread(BaseModel):
 
 
 class ThreadRequest(BaseModel):
-    uid: str
+    uid: str | None = None
     from_: str | None = None
     to: str | None = None
     date: str | None = None

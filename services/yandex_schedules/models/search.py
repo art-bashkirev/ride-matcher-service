@@ -57,7 +57,7 @@ class SearchPoint(BaseModel):
 
 
 class SearchSegment(BaseModel):
-    arrival: str
+    arrival: str | None = None
     thread: Thread | None = None
 
 
@@ -68,16 +68,16 @@ class SearchClarification(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    from_: str = Field(serialization_alias='from')
-    to: str
+    from_: str | None = Field(default=None, serialization_alias='from')
+    to: str | None = None
     date: str | None = None
     transport_types: TransportType | None = None
     system: CodingSystem | None = None
-    offset: int = 0
-    limit: int = 100
-    add_days_mask: bool = False
+    offset: int | None = 0
+    limit: int | None = 100
+    add_days_mask: bool | None = False
     result_timezone: str | None = None
-    transfers: bool = False
+    transfers: bool | None = False
 
 
 class SearchResponse(BaseModel):

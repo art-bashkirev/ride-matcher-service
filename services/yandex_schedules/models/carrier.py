@@ -4,9 +4,9 @@ from .common import CodingSystem
 
 
 class CarrierCodes(BaseModel):
-    icao: str | None
-    sirena: str | None
-    iata: str | None
+    icao: str | None = None
+    sirena: str | None = None
+    iata: str | None = None
 
 
 class Carrier(BaseModel):
@@ -23,7 +23,7 @@ class Carrier(BaseModel):
 
 
 class CarrierRequest(BaseModel):
-    code: str
+    code: str | None = None
     system: CodingSystem | None = None
 
 
