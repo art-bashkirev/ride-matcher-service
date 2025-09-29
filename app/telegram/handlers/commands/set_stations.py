@@ -30,7 +30,7 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user = update.effective_user
     if not user or not hasattr(user, "id") or update.message is None:
         return ConversationHandler.END
-    logger.info(f"User {user.id} started set stations")
+    logger.info("User %s started set stations", user.username if user.username else user.id)
 
     # Store user data
     if not hasattr(context, "user_data") or context.user_data is None:
@@ -44,10 +44,13 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     from services.database.user_service import UserService
     db_user = await UserService.get_user(user.id)
     if db_user and db_user.base_station_code and db_user.destination_code:
+        logger.info("User %s already has stations set, preventing update", user.username if user.username else user.id)
         await update.message.reply_text(
             "You have already set your stations. Updating is not allowed."
         )
         return ConversationHandler.END
+
+    logger.info("User %s entering base station selection", user.username if user.username else user.id)
 
     await update.message.reply_text(
         "Let's set up your base station and destination.\n\n"
@@ -66,16 +69,22 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text("Please enter a station name or code.")
         return CHOOSING_BASE
 
+    user = update.effective_user
+    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    logger.info("User %s searching for base station with query: '%s'", user_id, query)
+
     # Search for stations
     service = get_stations_service()
     try:
         stations = await service.search_stations(query, limit=5)
+        logger.info("User %s base station search returned %d results", user_id, len(stations) if stations else 0)
     except Exception as e:
-        logger.error(f"Failed to search stations: {e}")
+        logger.error("User %s failed to search stations: %s", user_id, e)
         await update.message.reply_text("Sorry, there was an error searching stations. Please try again.")
         return CHOOSING_BASE
 
     if not stations:
+        logger.info("User %s base station search found no results for query: '%s'", user_id, query)
         await update.message.reply_text(
             f"No stations found for '{query}'. Please try a different name or code."
         )
@@ -105,6 +114,9 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         return ConversationHandler.END
     await query.answer()
 
+    user = update.effective_user
+    user_id = user.username if user and user.username else (user.id if user else "unknown")
+
     data = query.data
     if not (isinstance(data, str) and data.startswith(STATION_SELECT)):
         return ConversationHandler.END
@@ -114,17 +126,19 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         return ConversationHandler.END
 
     station_type, code = parts
+    logger.info("User %s selected %s station with code: %s", user_id, station_type, code)
 
     # Get station details
     service = get_stations_service()
     try:
         station = await service.get_station_by_code(code)
     except Exception as e:
-        logger.error(f"Failed to get station {code}: {e}")
+        logger.error("User %s failed to get station %s: %s", user_id, code, e)
         await query.edit_message_text("Error retrieving station details. Please try again.")
         return ConversationHandler.END
 
     if not station:
+        logger.warning("User %s selected non-existent station with code: %s", user_id, code)
         await query.edit_message_text("Station not found. Please try again.")
         return ConversationHandler.END
 
@@ -134,6 +148,7 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         title = getattr(station, "title", "-") if hasattr(station, "title") else "-"
         code = getattr(station, "code", "-") if hasattr(station, "code") else "-"
         settlement_title = getattr(station, "settlement_title", "-") if hasattr(station, "settlement_title") else "-"
+        logger.info("User %s set base station: %s (%s) - %s", user_id, title, code, settlement_title)
         await query.edit_message_text(
             f"Base station set to: {title} ({code}) - {settlement_title}\n\n"
             "Now, what's your destination station? (where you change from suburban to metro)\n"
@@ -150,6 +165,8 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         dest_title = getattr(dest, "title", "-") if dest and hasattr(dest, "title") else "-"
         dest_code = getattr(dest, "code", "-") if dest and hasattr(dest, "code") else "-"
         dest_settlement = getattr(dest, "settlement_title", "-") if dest and hasattr(dest, "settlement_title") else "-"
+        logger.info("User %s set destination station: %s (%s) - %s", user_id, dest_title, dest_code, dest_settlement)
+        logger.info("User %s entering confirmation with base: %s (%s), dest: %s (%s)", user_id, base_title, base_code, dest_title, dest_code)
         keyboard = [
             [InlineKeyboardButton("Yes, save", callback_data=f"{STATION_CONFIRM}yes")],
             [InlineKeyboardButton("No, start over", callback_data=f"{STATION_CONFIRM}no")],
@@ -174,16 +191,22 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
         await update.message.reply_text("Please enter a station name or code.")
         return CHOOSING_DEST
 
+    user = update.effective_user
+    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    logger.info("User %s searching for destination station with query: '%s'", user_id, query)
+
     # Search for stations
     service = get_stations_service()
     try:
         stations = await service.search_stations(query, limit=5)
+        logger.info("User %s destination station search returned %d results", user_id, len(stations) if stations else 0)
     except Exception as e:
-        logger.error(f"Failed to search stations: {e}")
+        logger.error("User %s failed to search stations: %s", user_id, e)
         await update.message.reply_text("Sorry, there was an error searching stations. Please try again.")
         return CHOOSING_DEST
 
     if not stations:
+        logger.info("User %s destination station search found no results for query: '%s'", user_id, query)
         await update.message.reply_text(
             f"No stations found for '{query}'. Please try a different name or code."
         )
@@ -213,6 +236,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
     await query.answer()
 
+    user = update.effective_user
+    user_id = user.username if user and user.username else (user.id if user else "unknown")
+
     data = query.data
     if not (isinstance(data, str) and data.startswith(STATION_CONFIRM)):
         return ConversationHandler.END
@@ -220,8 +246,11 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     confirm = data[len(STATION_CONFIRM):]
 
     if confirm == "no":
+        logger.info("User %s cancelled station setup", user_id)
         await query.edit_message_text("Cancelled. Use /setstations to start again.")
         return ConversationHandler.END
+
+    logger.info("User %s confirmed station setup, saving to database", user_id)
 
     # Save to database
     user_data = context.user_data if context.user_data else {}
@@ -229,6 +258,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     dest = user_data.get("destination_station") if user_data else None
 
     if not base or not dest:
+        logger.error("User %s missing station data during confirmation", user_id)
         await query.edit_message_text("Missing station data. Please start over.")
         return ConversationHandler.END
 
@@ -244,6 +274,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         dest_title = getattr(dest, "title", "") if dest and hasattr(dest, "title") else ""
         # Only proceed if all required fields are present
         if not (isinstance(telegram_id, int) and base_code and base_title and dest_code and dest_title):
+            logger.error("User %s missing required data for saving stations", user_id)
             await query.edit_message_text("Missing required data. Please start over.")
             return ConversationHandler.END
         await UserService.get_or_create_user(
@@ -259,13 +290,15 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
             destination_code=dest_code,
             destination_title=dest_title,
         )
+        logger.info("User %s successfully saved stations: base=%s (%s), dest=%s (%s)", 
+                   user_id, base_title, base_code, dest_title, dest_code)
         await query.edit_message_text(
             "✅ Stations saved successfully!\n\n"
             f"Base: {base_title} ({base_code})\n"
             f"Destination: {dest_title} ({dest_code})"
         )
     except Exception as e:
-        logger.error(f"Failed to save user stations: {e}")
+        logger.error("User %s failed to save user stations: %s", user_id, e)
         await query.edit_message_text("Failed to save stations. Please try again.")
 
     return ConversationHandler.END
@@ -273,6 +306,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancel the conversation."""
+    user = update.effective_user
+    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    logger.info("User %s cancelled set stations conversation", user_id)
     await update.message.reply_text("Operation cancelled.")
     return ConversationHandler.END
 
