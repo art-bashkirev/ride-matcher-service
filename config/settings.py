@@ -30,6 +30,7 @@ class Config(BaseSettings):
 
     # Telegram bot
     telegram_bot_token: str | None = Field(default=None)
+    telegram_default_language: str = Field(default="en")  # Default language for the bot
 
     # Redis configuration for caching
     redis_host: str = Field(default="localhost")

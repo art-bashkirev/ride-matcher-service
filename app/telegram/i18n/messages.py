@@ -1,0 +1,262 @@
+"""Message templates with improved emoji choices."""
+
+from .types import Language
+
+# Better emoji choices as suggested by the reviewer
+EMOJIS = {
+    # Transportation
+    "train": "🚄",  # High-speed train instead of generic train
+    "station": "🚉",
+    "platform": "🚏",
+    "departure": "➡️",
+    "arrival": "⬅️",
+    "time": "🕐",
+    "schedule": "📋",
+    "route": "🗺️",
+    
+    # Status and actions
+    "loading": "⏳",
+    "success": "✅",
+    "error": "❌",
+    "warning": "⚠️",
+    "info": "ℹ️",
+    "question": "❓",
+    "check": "✔️",
+    "cross": "❌",
+    
+    # Navigation
+    "next": "▶️",
+    "previous": "◀️",
+    "up": "⬆️",
+    "down": "⬇️",
+    "back": "🔙",
+    
+    # Profile and user
+    "user": "👤",
+    "profile": "📖",
+    "settings": "⚙️",
+    "username": "🏷️",
+    "name": "📛",
+    "location": "🌍",
+    "home": "🏠",
+    "target": "🎯",
+    "code": "🔗",
+    
+    # Interface
+    "help": "❓",
+    "start": "🚀",
+    "stats": "📊",
+    "test": "🧪",
+    "cancel": "🚫",
+    "confirm": "✅",
+    "edit": "✏️",
+    
+    # General
+    "tip": "💡",
+    "sparkles": "✨",
+    "celebration": "🎉",
+    "clock": "⏰",
+    "calendar": "📅",
+    "page": "📄",
+    "list": "📝",
+    "search": "🔍",
+    "new": "🆕",
+}
+
+# Message templates for English
+MESSAGES_EN = {
+    # Common
+    "loading": f"{EMOJIS['loading']} **Fetching data...**\n\n{EMOJIS['clock']} Please wait while I get the information...",
+    "error_generic": f"{EMOJIS['error']} **Error**\n\nSomething went wrong. Please try again.",
+    "cancel": f"{EMOJIS['cancel']} Cancelled",
+    "yes": f"{EMOJIS['check']} Yes",
+    "no": f"{EMOJIS['cross']} No",
+    "back": f"{EMOJIS['back']} Back",
+    "next": f"Next {EMOJIS['next']}",
+    "previous": f"{EMOJIS['previous']} Previous",
+    
+    # Schedule
+    "schedule_title": f"{EMOJIS['schedule']} **Schedule for {{date}}**",
+    "schedule_station": f"{EMOJIS['station']} **Station:** {{station_id}}{{station_name}}",
+    "schedule_page": f"{EMOJIS['page']} **Page {{current_page}}/{{total_pages}}**",
+    "schedule_no_departures": f"{EMOJIS['schedule']} **No Departures Found**",
+    "schedule_no_departures_suggestions": f"{EMOJIS['tip']} **Suggestions:**\n• Try a different date\n• Check the station ID\n• Contact support if needed",
+    "schedule_arrives": f"{EMOJIS['arrival']} Arr",
+    "schedule_departs": f"{EMOJIS['departure']} Dep",
+    "schedule_departure": f"{EMOJIS['departure']} Departure",
+    "schedule_arrival": f"{EMOJIS['arrival']} Arrival",
+    "schedule_platform": f"{EMOJIS['platform']} Platform",
+    "schedule_stops": f"{EMOJIS['route']} Stops",
+    "schedule_time_na": f"{EMOJIS['time']} Time: N/A",
+    
+    # Profile
+    "profile_title": f"{EMOJIS['profile']} **Profile Information**",
+    "profile_username": f"{EMOJIS['username']} **Username:**",
+    "profile_first_name": f"{EMOJIS['name']} **First Name:**",
+    "profile_last_name": f"{EMOJIS['name']} **Last Name:**",
+    "profile_base_station": f"{EMOJIS['home']} **Base Station:**",
+    "profile_destination": f"{EMOJIS['target']} **Destination:**",
+    "profile_code": f"{EMOJIS['code']} Code:",
+    "profile_not_found": "No profile found. Please set your stations first with /setstations.",
+    "profile_not_set": "Not set",
+    
+    # Set Stations
+    "setstations_title": f"{EMOJIS['train']} **Station Setup Wizard**",
+    "setstations_step1": f"{EMOJIS['home']} **Step 1: Base Station**",
+    "setstations_how_to_enter": f"{EMOJIS['tip']} **How to enter:**",
+    "setstations_enter_base": f"{EMOJIS['list']} Please type your base station name or code:",
+    "setstations_base_set_success": f"{EMOJIS['success']} **Base Station Set Successfully!**",
+    "setstations_next_step": f"{EMOJIS['target']} **Next Step:** Please enter your destination station",
+    "setstations_enter_destination": f"{EMOJIS['tip']} **Tip:** Enter the station name or code below",
+    "setstations_confirm_title": f"{EMOJIS['confirm']} **Confirm Your Station Settings**",
+    "setstations_base_station_section": f"{EMOJIS['home']} **Base Station:**",
+    "setstations_destination_section": f"{EMOJIS['target']} **Destination Station:**",
+    "setstations_location": f"{EMOJIS['location']} Location:",
+    "setstations_confirm_question": f"{EMOJIS['question']} **Is this information correct?**",
+    "setstations_success_title": f"{EMOJIS['celebration']} **Stations Saved Successfully!**",
+    "setstations_success_message": f"{EMOJIS['sparkles']} Your stations have been saved and are ready to use!",
+    "setstations_stations_found": "Found {{count}} stations. Please select your {{type}} station:",
+    "setstations_no_stations_found": f"No stations found for '{{query}}'. Please try a different name or code.",
+    
+    # Commands
+    "help_title": f"{EMOJIS['help']} **Available Commands**",
+    "help_commands": f"""
+{EMOJIS['start']} /start - Initialize the bot
+{EMOJIS['help']} /help - Show this help message
+{EMOJIS['train']} /schedule - View train schedules
+{EMOJIS['stats']} /stats - View cache statistics
+{EMOJIS['user']} /profile - View your profile
+{EMOJIS['settings']} /setstations - Set your stations""",
+    "help_need_help": f"{EMOJIS['tip']} **Need help?** Just type a command to get started!",
+    
+    "start_welcome": f"{EMOJIS['celebration']} **Welcome to Ride Matcher!** {EMOJIS['celebration']}",
+    "start_get_started": f"{EMOJIS['start']} **Get Started:**",
+    "start_ready": f"{EMOJIS['sparkles']} Ready to explore? Type /help to begin!",
+    
+    "test_title": f"{EMOJIS['test']} **Test Command**",
+    "test_quote": f"{EMOJIS['sparkles']} *\"They need us for who we are.*\n*So be yourself. Only better.\"*",
+    "test_working": f"{EMOJIS['success']} Bot is working perfectly!",
+    
+    "stats_title": f"{EMOJIS['stats']} **Cache Statistics**",
+    "stats_message": "Here are the current cache statistics:\n\n{EMOJIS['chart']} **Stats:** {{stats}}",
+    "stats_tip": f"{EMOJIS['tip']} *Cache helps improve response times by storing frequently accessed data.*",
+    
+    # Schedule Command
+    "schedule_cmd_help_title": f"{EMOJIS['train']} **Schedule Command Help**",
+    "schedule_cmd_missing_id": f"{EMOJIS['question']} **Missing Station ID**",
+    "schedule_cmd_usage": f"{EMOJIS['list']} **Usage:**\n`/schedule s9600213`",
+    "schedule_cmd_format": f"{EMOJIS['edit']} **Format:**\n• Station ID: 's' + 7 digits\n• Example: s9600213",
+    "schedule_cmd_tip": f"{EMOJIS['tip']} **Tip:** Use /setstations to configure your stations first!",
+    
+    "schedule_error_invalid_format": f"{EMOJIS['error']} **Invalid Station ID Format**",
+    "schedule_error_you_entered": f"{EMOJIS['search']} **You entered:** `{{station_id}}`",
+    "schedule_error_expected_format": f"{EMOJIS['check']} **Expected format:**\n• 's' followed by exactly 7 digits\n• Example: s9600213",
+    "schedule_error_try_again": f"{EMOJIS['tip']} **Try again with correct format!**",
+    
+    # Errors
+    "error_try_different_date": "• Try a different date",
+    "error_check_station_id": "• Check the station ID",
+    "error_contact_support": "• Contact support if needed",
+}
+
+# Message templates for Russian
+MESSAGES_RU = {
+    # Common
+    "loading": f"{EMOJIS['loading']} **Загрузка данных...**\n\n{EMOJIS['clock']} Пожалуйста, подождите, пока я получу информацию...",
+    "error_generic": f"{EMOJIS['error']} **Ошибка**\n\nЧто-то пошло не так. Пожалуйста, попробуйте еще раз.",
+    "cancel": f"{EMOJIS['cancel']} Отменено",
+    "yes": f"{EMOJIS['check']} Да",
+    "no": f"{EMOJIS['cross']} Нет",
+    "back": f"{EMOJIS['back']} Назад",
+    "next": f"Далее {EMOJIS['next']}",
+    "previous": f"{EMOJIS['previous']} Предыдущая",
+    
+    # Schedule
+    "schedule_title": f"{EMOJIS['schedule']} **Расписание на {{date}}**",
+    "schedule_station": f"{EMOJIS['station']} **Станция:** {{station_id}}{{station_name}}",
+    "schedule_page": f"{EMOJIS['page']} **Страница {{current_page}}/{{total_pages}}**",
+    "schedule_no_departures": f"{EMOJIS['schedule']} **Отправления не найдены**",
+    "schedule_no_departures_suggestions": f"{EMOJIS['tip']} **Предложения:**\n• Попробуйте другую дату\n• Проверьте ID станции\n• Обратитесь в поддержку при необходимости",
+    "schedule_arrives": f"{EMOJIS['arrival']} Приб",
+    "schedule_departs": f"{EMOJIS['departure']} Отпр",
+    "schedule_departure": f"{EMOJIS['departure']} Отправление",
+    "schedule_arrival": f"{EMOJIS['arrival']} Прибытие",
+    "schedule_platform": f"{EMOJIS['platform']} Платформа",
+    "schedule_stops": f"{EMOJIS['route']} Остановки",
+    "schedule_time_na": f"{EMOJIS['time']} Время: Н/Д",
+    
+    # Profile
+    "profile_title": f"{EMOJIS['profile']} **Информация профиля**",
+    "profile_username": f"{EMOJIS['username']} **Имя пользователя:**",
+    "profile_first_name": f"{EMOJIS['name']} **Имя:**",
+    "profile_last_name": f"{EMOJIS['name']} **Фамилия:**",
+    "profile_base_station": f"{EMOJIS['home']} **Базовая станция:**",
+    "profile_destination": f"{EMOJIS['target']} **Назначение:**",
+    "profile_code": f"{EMOJIS['code']} Код:",
+    "profile_not_found": "Профиль не найден. Пожалуйста, сначала установите ваши станции с помощью /setstations.",
+    "profile_not_set": "Не установлено",
+    
+    # Set Stations
+    "setstations_title": f"{EMOJIS['train']} **Мастер настройки станций**",
+    "setstations_step1": f"{EMOJIS['home']} **Шаг 1: Базовая станция**",
+    "setstations_how_to_enter": f"{EMOJIS['tip']} **Как вводить:**",
+    "setstations_enter_base": f"{EMOJIS['list']} Пожалуйста, введите название или код вашей базовой станции:",
+    "setstations_base_set_success": f"{EMOJIS['success']} **Базовая станция успешно установлена!**",
+    "setstations_next_step": f"{EMOJIS['target']} **Следующий шаг:** Пожалуйста, введите станцию назначения",
+    "setstations_enter_destination": f"{EMOJIS['tip']} **Совет:** Введите название или код станции ниже",
+    "setstations_confirm_title": f"{EMOJIS['confirm']} **Подтвердите настройки станций**",
+    "setstations_base_station_section": f"{EMOJIS['home']} **Базовая станция:**",
+    "setstations_destination_section": f"{EMOJIS['target']} **Станция назначения:**",
+    "setstations_location": f"{EMOJIS['location']} Местоположение:",
+    "setstations_confirm_question": f"{EMOJIS['question']} **Эта информация верна?**",
+    "setstations_success_title": f"{EMOJIS['celebration']} **Станции успешно сохранены!**",
+    "setstations_success_message": f"{EMOJIS['sparkles']} Ваши станции сохранены и готовы к использованию!",
+    "setstations_stations_found": "Найдено {{count}} станций. Пожалуйста, выберите вашу {{type}} станцию:",
+    "setstations_no_stations_found": f"Станции для '{{query}}' не найдены. Попробуйте другое название или код.",
+    
+    # Commands  
+    "help_title": f"{EMOJIS['help']} **Доступные команды**",
+    "help_commands": f"""
+{EMOJIS['start']} /start - Инициализировать бота
+{EMOJIS['help']} /help - Показать это сообщение помощи
+{EMOJIS['train']} /schedule - Посмотреть расписание поездов
+{EMOJIS['stats']} /stats - Посмотреть статистику кэша
+{EMOJIS['user']} /profile - Посмотреть ваш профиль
+{EMOJIS['settings']} /setstations - Установить ваши станции""",
+    "help_need_help": f"{EMOJIS['tip']} **Нужна помощь?** Просто введите команду для начала!",
+    
+    "start_welcome": f"{EMOJIS['celebration']} **Добро пожаловать в Ride Matcher!** {EMOJIS['celebration']}",
+    "start_get_started": f"{EMOJIS['start']} **Начать работу:**",
+    "start_ready": f"{EMOJIS['sparkles']} Готовы исследовать? Введите /help для начала!",
+    
+    "test_title": f"{EMOJIS['test']} **Тестовая команда**",
+    "test_quote": f"{EMOJIS['sparkles']} *\"Мы нужны им такими, какие мы есть.*\n*Так что будьте собой. Только лучше.\"*",
+    "test_working": f"{EMOJIS['success']} Бот работает отлично!",
+    
+    "stats_title": f"{EMOJIS['stats']} **Статистика кэша**",
+    "stats_message": "Вот текущая статистика кэша:\n\n{EMOJIS['chart']} **Статистика:** {{stats}}",
+    "stats_tip": f"{EMOJIS['tip']} *Кэш помогает улучшить время отклика, сохраняя часто используемые данные.*",
+    
+    # Schedule Command
+    "schedule_cmd_help_title": f"{EMOJIS['train']} **Помощь по команде расписания**",
+    "schedule_cmd_missing_id": f"{EMOJIS['question']} **Отсутствует ID станции**",
+    "schedule_cmd_usage": f"{EMOJIS['list']} **Использование:**\n`/schedule s9600213`",
+    "schedule_cmd_format": f"{EMOJIS['edit']} **Формат:**\n• ID станции: 's' + 7 цифр\n• Пример: s9600213",
+    "schedule_cmd_tip": f"{EMOJIS['tip']} **Совет:** Используйте /setstations для настройки ваших станций!",
+    
+    "schedule_error_invalid_format": f"{EMOJIS['error']} **Неверный формат ID станции**",
+    "schedule_error_you_entered": f"{EMOJIS['search']} **Вы ввели:** `{{station_id}}`",
+    "schedule_error_expected_format": f"{EMOJIS['check']} **Ожидаемый формат:**\n• 's' с последующими 7 цифрами\n• Пример: s9600213",
+    "schedule_error_try_again": f"{EMOJIS['tip']} **Попробуйте еще раз с правильным форматом!**",
+    
+    # Errors
+    "error_try_different_date": "• Попробуйте другую дату",
+    "error_check_station_id": "• Проверьте ID станции",
+    "error_contact_support": "• Обратитесь в поддержку при необходимости",
+}
+
+# All message templates
+MESSAGES = {
+    Language.EN: MESSAGES_EN,
+    Language.RU: MESSAGES_RU,
+}

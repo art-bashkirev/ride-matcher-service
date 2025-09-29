@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from services.yandex_schedules.models.schedule import Schedule
+from .i18n import get_i18n_manager, Language
 
 
 def is_valid_station_id(text: str) -> bool:
@@ -48,20 +49,34 @@ def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[
 
 
 def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], current_page: int = 1,
-                          total_pages: int = 1) -> str:
-    """Format schedule data for telegram response."""
+                          total_pages: int = 1, user_id: Optional[int] = None, language: Optional[Language] = None) -> str:
+    """Format schedule data for telegram response.
+    
+    Args:
+        station_id: Station ID
+        date: Date string
+        schedule: List of schedule items
+        current_page: Current page number
+        total_pages: Total number of pages
+        user_id: Telegram user ID for language detection
+        language: Override language
+    
+    Returns:
+        Formatted schedule message
+    """
+    i18n = get_i18n_manager()
+    
     if not schedule:
-        return (
-            f"📅 **No Departures Found**\n"
-            f"════════════════════════\n\n"
-            f"🚉 **Station:** {station_id}\n"
-            f"📅 **Date:** {date}\n\n"
-            f"❌ No scheduled departures found\n\n"
-            f"💡 **Suggestions:**\n"
-            f"• Try a different date\n"
-            f"• Check the station ID\n"
-            f"• Contact support if needed"
-        )
+        # Format no departures message
+        header = i18n.get_message("schedule_no_departures", user_id, language)
+        separator = "═" * 24
+        station_info = i18n.get_message("schedule_station", user_id, language, 
+                                       station_id=station_id, station_name="")
+        date_info = f"📅 **Date:** {date}"
+        error_msg = "❌ No scheduled departures found"
+        suggestions = i18n.get_message("schedule_no_departures_suggestions", user_id, language)
+        
+        return f"{header}\n{separator}\n\n{station_info}\n{date_info}\n\n{error_msg}\n\n{suggestions}"
 
     # Get station name from first schedule item if available
     station_name = ""
@@ -73,16 +88,20 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
         if len(parts) >= 2:
             station_name = f" ({parts[0]})"
 
-    # Add pagination info to header if multiple pages
-    page_info = f"📄 **Page {current_page}/{total_pages}**\n" if total_pages > 1 else ""
-    reply_text = (
-        f"📅 **Schedule for {date}**\n"
-        f"════════════════════════════\n\n"
-        f"🚉 **Station:** {station_id}{station_name}\n"
-        f"{page_info}\n"
-    )
+    # Build header
+    header = i18n.get_message("schedule_title", user_id, language, date=date)
+    separator = "═" * 28
+    station_info = i18n.get_message("schedule_station", user_id, language, 
+                                   station_id=station_id, station_name=station_name)
+    
+    # Add pagination if needed
+    page_info = ""
+    if total_pages > 1:
+        page_info = f"\n{i18n.get_message('schedule_page', user_id, language, current_page=current_page, total_pages=total_pages)}"
+    
+    reply_text = f"{header}\n{separator}\n\n{station_info}{page_info}\n\n"
 
-    # Show all items in the current page (no longer limit to 10 here)
+    # Process each schedule item
     for i, schedule_item in enumerate(schedule):
         # Format time information for this station
         time_info = ""
@@ -92,25 +111,33 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
                 departure_dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
                 arrival_time = arrival_dt.strftime('%H:%M')
                 departure_time = departure_dt.strftime('%H:%M')
-                time_info = f"⏰ Arr: {arrival_time}  •  Dep: {departure_time}"
+                arr_text = i18n.get_message("schedule_arrives", user_id, language)
+                dep_text = i18n.get_message("schedule_departs", user_id, language)
+                time_info = f"⏰ {arr_text}: {arrival_time}  •  {dep_text}: {departure_time}"
             except (ValueError, AttributeError):
-                time_info = f"⏰ Arr: {schedule_item.arrival}  •  Dep: {schedule_item.departure}"
+                arr_text = i18n.get_message("schedule_arrives", user_id, language)
+                dep_text = i18n.get_message("schedule_departs", user_id, language)
+                time_info = f"⏰ {arr_text}: {schedule_item.arrival}  •  {dep_text}: {schedule_item.departure}"
         elif schedule_item.departure:
             try:
                 dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
                 departure_time = dt.strftime('%H:%M')
-                time_info = f"⏰ Departure: {departure_time}"
+                dep_text = i18n.get_message("schedule_departure", user_id, language)
+                time_info = f"⏰ {dep_text}: {departure_time}"
             except (ValueError, AttributeError):
-                time_info = f"⏰ Departure: {schedule_item.departure}"
+                dep_text = i18n.get_message("schedule_departure", user_id, language)
+                time_info = f"⏰ {dep_text}: {schedule_item.departure}"
         elif schedule_item.arrival:
             try:
                 dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
                 arrival_time = dt.strftime('%H:%M')
-                time_info = f"⏰ Arrival: {arrival_time}"
+                arr_text = i18n.get_message("schedule_arrival", user_id, language)
+                time_info = f"⏰ {arr_text}: {arrival_time}"
             except (ValueError, AttributeError):
-                time_info = f"⏰ Arrival: {schedule_item.arrival}"
+                arr_text = i18n.get_message("schedule_arrival", user_id, language)
+                time_info = f"⏰ {arr_text}: {schedule_item.arrival}"
         else:
-            time_info = "⏰ Time: N/A"
+            time_info = i18n.get_message("schedule_time_na", user_id, language)
 
         # Get thread information
         thread_info = "Unknown"
@@ -127,15 +154,17 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
         # Format platform information
         platform_info = ""
         if schedule_item.platform:
-            platform_info = f"  🚉 Platform {schedule_item.platform}"
+            platform_text = i18n.get_message("schedule_platform", user_id, language)
+            platform_info = f"  🚏 {platform_text} {schedule_item.platform}"
 
         # Enhanced formatting with better structure and spacing
-        reply_text += f"🚂 {thread_info}\n"
+        reply_text += f"🚄 {thread_info}\n"
         reply_text += f"{time_info}{platform_info}\n"
 
         # Add stops information if available and not too long
         if schedule_item.stops and len(schedule_item.stops) < 50:
-            reply_text += f"📍 Stops: {schedule_item.stops}\n"
+            stops_text = i18n.get_message("schedule_stops", user_id, language)
+            reply_text += f"🗺️ {stops_text}: {schedule_item.stops}\n"
 
         # Add visual separator between entries for better readability
         reply_text += "─" * 25 + "\n\n"
