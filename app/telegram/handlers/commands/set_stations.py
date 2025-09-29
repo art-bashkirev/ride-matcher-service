@@ -44,7 +44,7 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data["last_name"] = getattr(user, "last_name", None)
 
     # Check if user already has stations set
-    from services.database.user_service import UserService
+    from types import SimpleNamespace
     db_user = await UserService.get_user(user.id)
     if db_user:
         base_exists = bool(getattr(db_user, 'base_station_code', None))
@@ -54,14 +54,24 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text("You have already set your stations. Updating is not allowed. Type /cancel to cancel.")
             return ConversationHandler.END
         elif base_exists and not dest_exists:
-            logger.info("User %s has base station set but missing destination, continuing to set destination", user.username if user.username else user.id)
-            context.user_data['base_station'] = None  # Retain existing base; force new destination
-            await update.message.reply_text("You already have a base station set. Please enter your destination station. Type /cancel to cancel.")
+            context.user_data['base_station'] = SimpleNamespace(
+                code=db_user.base_station_code,
+                title=db_user.base_station_title,
+                settlement_title=getattr(db_user, 'base_station_settlement', 'Unknown'),
+                direction=''
+            )
+            logger.info("User %s has base station set but missing destination, prompting for destination", user.username if user.username else user.id)
+            await update.message.reply_text("Your base station is already set. Please enter your destination station. Type /cancel to cancel.")
             return CHOOSING_DEST
         elif dest_exists and not base_exists:
-            logger.info("User %s has destination station set but missing base, continuing to set base station", user.username if user.username else user.id)
-            context.user_data['destination_station'] = None  # Retain existing destination; force new base
-            await update.message.reply_text("You already have a destination station set. Please enter your base station. Type /cancel to cancel.")
+            context.user_data['destination_station'] = SimpleNamespace(
+                code=db_user.destination_code,
+                title=db_user.destination_title,
+                settlement_title=getattr(db_user, 'destination_settlement', 'Unknown'),
+                direction=''
+            )
+            logger.info("User %s has destination station set but missing base, prompting for base station", user.username if user.username else user.id)
+            await update.message.reply_text("Your destination station is already set. Please enter your base station. Type /cancel to cancel.")
             return CHOOSING_BASE
 
     logger.info("User %s entering base station selection", user.username if user.username else user.id)
@@ -84,7 +94,13 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
         return CHOOSING_BASE
 
     user = update.effective_user
-    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    if user is not None:
+        if user.username:
+            user_id = user.username
+        else:
+            user_id = user.id
+    else:
+        user_id = "unknown"
     logger.info("User %s searching for base station with query: '%s'", user_id, query)
 
     # Search for stations
@@ -129,7 +145,13 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
     await query.answer()
 
     user = update.effective_user
-    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    if user is not None:
+        if user.username:
+            user_id = user.username
+        else:
+            user_id = user.id
+    else:
+        user_id = "unknown"
 
     data = query.data
     if not (isinstance(data, str) and data.startswith(STATION_SELECT)):
@@ -208,7 +230,13 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
         return CHOOSING_DEST
 
     user = update.effective_user
-    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    if user is not None:
+        if user.username:
+            user_id = user.username
+        else:
+            user_id = user.id
+    else:
+        user_id = "unknown"
     logger.info("User %s searching for destination station with query: '%s'", user_id, query)
 
     # Search for stations
@@ -253,7 +281,13 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
 
     user = update.effective_user
-    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    if user is not None:
+        if user.username:
+            user_id = user.username
+        else:
+            user_id = user.id
+    else:
+        user_id = "unknown"
 
     data = query.data
     if not (isinstance(data, str) and data.startswith(STATION_CONFIRM)):
