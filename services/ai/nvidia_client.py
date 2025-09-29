@@ -50,7 +50,7 @@ class NvidiaAIClient:
         }
         
         payload = {
-            "model": "meta/llama-4-maverick-17b-128e-instruct",
+            "model": "google/gemma-3-27b-it",
             "messages": [{"role": "user", "content": user_message}],
             "max_tokens": 512,
             "temperature": 1.00,
