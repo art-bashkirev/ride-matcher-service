@@ -5,11 +5,10 @@ import json
 from typing import Optional, Type, TypeVar
 
 from pydantic import BaseModel
-from redis.asyncio import Redis as AsyncRedis
 from redis.exceptions import RedisError
 
 from config.log_setup import get_logger
-from config.settings import get_config
+from services.cache.redis_client import BaseRedisClient
 from services.yandex_schedules.models.schedule import ScheduleRequest, ScheduleResponse
 from services.yandex_schedules.models.search import SearchRequest, SearchResponse
 
@@ -18,36 +17,8 @@ logger = get_logger(__name__)
 T = TypeVar('T', bound=BaseModel)
 
 
-class YandexSchedulesCache:
+class YandexSchedulesCache(BaseRedisClient):
     """Redis cache manager for Yandex Schedules API responses."""
-
-    def __init__(self):
-        """Initialize Redis connection."""
-        self.config = get_config()
-        self._redis: Optional[AsyncRedis] = None
-
-    async def _get_redis(self) -> AsyncRedis:
-        """Get or create Redis connection."""
-        if self._redis is None:
-            try:
-                self._redis = AsyncRedis(
-                    host=self.config.redis_host,
-                    port=self.config.redis_port,
-                    db=self.config.redis_db,
-                    username=self.config.redis_username,
-                    password=self.config.redis_password,
-                    decode_responses=True,
-                    socket_timeout=10,
-                    socket_connect_timeout=10,
-                    health_check_interval=30
-                )
-                # Test connection
-                await self._redis.ping()
-                logger.info("Redis connection established successfully")
-            except RedisError as e:
-                logger.error("Failed to connect to Redis: %s", e)
-                raise
-        return self._redis
 
     def _generate_cache_key(self, prefix: str, request: BaseModel) -> str:
         """Generate a cache key from request parameters."""
