@@ -54,17 +54,6 @@ class UserService:
                 "last_name": last_name,
             }
         )
-        if not created:
-            # Update names if changed
-            update_fields = {}
-            if username != user.username:
-                update_fields["username"] = username
-            if first_name != user.first_name:
-                update_fields["first_name"] = first_name
-            if last_name != user.last_name:
-                update_fields["last_name"] = last_name
-            if update_fields:
-                await user.update_from_dict(update_fields).save()
         return user
 
     @staticmethod
