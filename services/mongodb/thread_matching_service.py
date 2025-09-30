@@ -230,6 +230,88 @@ class ThreadMatchingService:
             logger.error("Failed to find matches for user %s: %s", telegram_id, e)
             return {}
 
+    async def find_users_to_notify(
+        self, 
+        new_user_telegram_id: int,
+        new_user_threads: List[str]
+    ) -> List[Dict[str, Any]]:
+        """Find existing users who should be notified about a new matching user.
+        
+        When a new user stores their search results, this method finds all existing
+        users whose candidate threads overlap with the new user's threads.
+        
+        Args:
+            new_user_telegram_id: The telegram ID of the new user who just searched
+            new_user_threads: List of thread UIDs for the new user
+            
+        Returns:
+            List of user info dicts for users who should be notified
+        """
+        try:
+            if not new_user_threads:
+                return []
+            
+            collection = await self.get_search_results_collection()
+            
+            # Get the new user's document to include in notifications
+            new_user_doc = await collection.find_one({"telegram_id": new_user_telegram_id})
+            if not new_user_doc:
+                logger.warning("No document found for new user %s", new_user_telegram_id)
+                return []
+            
+            # Find all users who have any of the same thread UIDs
+            cursor = collection.find({
+                "candidate_threads.thread_uid": {"$in": new_user_threads},
+                "telegram_id": {"$ne": new_user_telegram_id}  # Exclude the new user
+            })
+            
+            users_to_notify = []
+            notified_telegram_ids = set()  # Avoid duplicate notifications
+            
+            async for other_doc in cursor:
+                other_telegram_id = other_doc["telegram_id"]
+                
+                # Skip if already added
+                if other_telegram_id in notified_telegram_ids:
+                    continue
+                
+                # Check if this user has any overlapping threads
+                other_threads = other_doc.get("candidate_threads", [])
+                matching_thread_uids = [
+                    thread.get("thread_uid") 
+                    for thread in other_threads 
+                    if thread.get("thread_uid") in new_user_threads
+                ]
+                
+                if matching_thread_uids:
+                    # Build user info with the new user's details
+                    user_info = {
+                        "telegram_id": other_telegram_id,
+                        "matching_threads": matching_thread_uids,
+                        "new_user_name": (
+                            new_user_doc.get("first_name") or 
+                            new_user_doc.get("username") or 
+                            "Пользователь"
+                        ),
+                        "new_user_from_title": new_user_doc.get("from_station_title"),
+                        "new_user_to_title": new_user_doc.get("to_station_title"),
+                    }
+                    users_to_notify.append(user_info)
+                    notified_telegram_ids.add(other_telegram_id)
+            
+            logger.info(
+                "Found %d existing users to notify about new user %s", 
+                len(users_to_notify), new_user_telegram_id
+            )
+            return users_to_notify
+            
+        except Exception as e:
+            logger.error(
+                "Failed to find users to notify for new user %s: %s", 
+                new_user_telegram_id, e
+            )
+            return []
+
     async def get_user_search_results(self, telegram_id: int) -> Optional[UserSearchResults]:
         """Get user's search results.
         

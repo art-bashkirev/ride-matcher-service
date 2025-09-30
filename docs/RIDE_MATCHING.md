@@ -43,13 +43,14 @@ For each train found:
    - List of candidate threads
    - TTL of 150 minutes (2.5 hours) for automatic expiration
 
-### 4. Find Matches
+### 4. Find Matches and Notify Existing Users
 
 The matching algorithm:
 
 1. **Query MongoDB**: Find all other users whose candidate threads share the same thread UID
 2. **Build Match Map**: Create a dictionary mapping thread_uid → list of matched users
 3. **Filter Results**: Only return threads where at least one other user is found
+4. **Notify Existing Users**: When a new user stores their search results, find all existing users who have matching threads and send them a notification about the new match
 
 ### 5. Display Results
 

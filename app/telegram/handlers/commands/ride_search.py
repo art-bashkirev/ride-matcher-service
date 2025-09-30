@@ -156,6 +156,34 @@ async def search_rides(
             await searching_msg.edit_text(get_message("ride_search_error"))
             return
         
+        # Notify existing users who now match with this user
+        thread_uids = [t.thread_uid for t in candidate_threads]
+        users_to_notify = await thread_service.find_users_to_notify(telegram_id, thread_uids)
+        
+        if users_to_notify:
+            logger.info("Notifying %d existing users about new match for user %s", 
+                       len(users_to_notify), telegram_id)
+            
+            # Send notifications to existing users
+            for user_info in users_to_notify:
+                try:
+                    notification_text = (
+                        f"{get_message('ride_new_match')}\n\n"
+                        f"{get_message('ride_new_match_details',
+                                      thread_title='совпадающий маршрут',
+                                      departure='см. ваш поиск',
+                                      name=user_info['new_user_name'],
+                                      from_=user_info['new_user_from_title'],
+                                      to=user_info['new_user_to_title'])}"
+                    )
+                    await context.bot.send_message(
+                        chat_id=user_info['telegram_id'],
+                        text=notification_text
+                    )
+                    logger.debug("Notified user %s about new match", user_info['telegram_id'])
+                except Exception as e:
+                    logger.error("Failed to notify user %s: %s", user_info.get('telegram_id'), e)
+        
         # Find matches
         matches = await thread_service.find_matches(telegram_id)
         
