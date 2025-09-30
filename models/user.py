@@ -17,9 +17,6 @@ class User(Model):
     destination_code = fields.CharField(max_length=50, null=True)  # Yandex station code
     destination_title = fields.CharField(max_length=255, null=True)
 
-    # Language preference
-    language = fields.CharField(max_length=10, null=True, default='en')  # Language code (en, ru, etc.)
-
     # Admin privileges
     is_admin = fields.BooleanField(default=False)
 

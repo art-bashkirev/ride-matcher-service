@@ -90,17 +90,6 @@ class UserService:
         return await User.get_or_none(telegram_id=telegram_id)
 
     @staticmethod
-    async def update_user_language(telegram_id: int, language: str) -> Optional[User]:
-        """Update user's language preference."""
-        try:
-            user = await User.get(telegram_id=telegram_id)
-            user.language = language
-            await user.save()
-            return user
-        except Exception:
-            return None
-
-    @staticmethod
     async def set_admin_status(telegram_id: int, is_admin: bool) -> Optional[User]:
         """Set admin status for a user."""
         try:
