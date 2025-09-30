@@ -123,6 +123,21 @@ MESSAGES = {
     "keyboard_schedule_dest": f"{EMOJIS['target']} Расписание до пункта назначения",
     "keyboard_help": f"{EMOJIS['help']} Помощь",
     "keyboard_profile": f"{EMOJIS['user']} Профиль",
+    
+    # Echo/Message handlers
+    "echo_station_id_suggestion": "Используйте /schedule {{station_id}} для получения информации о расписании.",
+    
+    # AI Mode messages
+    "ai_mode_not_configured": "Режим AI включён, но не настроен должным образом.",
+    "ai_empty_response": "Я получил пустой ответ от AI. Пожалуйста, попробуйте еще раз.",
+    "ai_connection_error": "У меня проблемы с подключением к сервису AI. Пожалуйста, попробуйте позже.",
+    "ai_timeout_error": "Сервис AI слишком долго отвечает. Пожалуйста, попробуйте еще раз.",
+    "ai_invalid_input": "Я не смог обработать ваше сообщение. Пожалуйста, попробуйте перефразировать.",
+    "ai_processing_error": "Извините, у меня сейчас проблемы с обработкой вашего сообщения.",
+    
+    # Echo Mode messages
+    "echo_message_too_long": "Ваше сообщение слишком длинное для эха. Пожалуйста, отправьте более короткое сообщение.",
+    "echo_technical_error": "Извините, я не смог повторить ваше сообщение из-за технической проблемы.",
 }
 
 
