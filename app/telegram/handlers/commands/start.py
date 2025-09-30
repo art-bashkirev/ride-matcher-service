@@ -50,22 +50,32 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         
+        greeting = get_message("start_greeting_with_stations", mention=mention)
+        base_station = get_message("start_your_base_station", base_station=db_user.base_station_title)
+        destination = get_message("start_your_destination", destination=db_user.destination_title)
+        use_menu = get_message("start_use_menu")
+        
         await update.message.reply_html(
             f"{welcome}\n\n"
-            f"Привет, {mention}! Я здесь, чтобы помочь вам с расписанием поездов.\n\n"
-            f"🏠 **Ваша базовая станция:** {db_user.base_station_title}\n"
-            f"🎯 **Ваше назначение:** {db_user.destination_title}\n\n"
-            f"Используйте меню ниже для проверки расписания!",
+            f"{greeting}\n\n"
+            f"{base_station}\n"
+            f"{destination}\n\n"
+            f"{use_menu}",
             reply_markup=reply_markup
         )
     else:
         # User doesn't have stations - prompt to set them
+        greeting = get_message("start_greeting_no_stations", mention=mention)
+        set_stations_instruction = get_message("start_set_stations_instruction")
+        help_instruction = get_message("start_help_instruction")
+        please_set_stations = get_message("start_please_set_stations")
+        
         await update.message.reply_html(
             f"{welcome}\n\n"
-            f"Привет, {mention}! Я здесь, чтобы помочь вам с расписанием поездов и информацией о станциях.\n\n"
+            f"{greeting}\n\n"
             f"{get_started}\n"
-            f"• Используйте /setstations для настройки ваших станций (обязательно)\n"
-            f"• Используйте /help для просмотра всех доступных команд\n\n"
-            f"⚠️ Пожалуйста, сначала установите ваши станции с помощью /setstations!",
+            f"{set_stations_instruction}\n"
+            f"{help_instruction}\n\n"
+            f"{please_set_stations}",
             reply_markup=ForceReply(selective=True)
         )
