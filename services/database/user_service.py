@@ -45,7 +45,7 @@ class UserService:
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
     ) -> User:
-        """Get or create a user. Updates only non-None Telegram profile fields for existing users."""
+        """Get or create a user."""
         user, created = await User.get_or_create(
             telegram_id=telegram_id,
             defaults={
@@ -54,24 +54,6 @@ class UserService:
                 "last_name": last_name,
             }
         )
-        
-        # For existing users, update only the Telegram profile fields that are provided (not None)
-        # This ensures we keep station preferences and other data intact
-        if not created:
-            fields_to_update = []
-            if username is not None:
-                user.username = username
-                fields_to_update.append("username")
-            if first_name is not None:
-                user.first_name = first_name
-                fields_to_update.append("first_name")
-            if last_name is not None:
-                user.last_name = last_name
-                fields_to_update.append("last_name")
-            
-            if fields_to_update:
-                await user.save(update_fields=fields_to_update)
-        
         return user
 
     @staticmethod
