@@ -2,6 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.telegram.utils import is_valid_station_id
+from app.telegram.messages import get_message
 from services.ai.flag_service import AIFlagService
 from services.ai.nvidia_client import NvidiaAIClient
 from config.settings import get_config, Config
@@ -15,7 +16,7 @@ async def _handle_ai_mode(update: Update, message_text: str, user_info: str, con
     try:
         if not config.nvidia_api_key:
             logger.warning("AI mode enabled but NVIDIA_API_KEY not configured for user %s", user_info)
-            await update.message.reply_text("AI mode is enabled but not properly configured.")
+            await update.message.reply_text(get_message("ai_mode_not_configured"))
             return
         
         logger.debug("Starting AI processing for user %s", user_info)
@@ -25,7 +26,7 @@ async def _handle_ai_mode(update: Update, message_text: str, user_info: str, con
             
             if not ai_response:
                 logger.warning("AI client returned empty response for user %s", user_info)
-                await update.message.reply_text("I received an empty response from the AI. Please try again.")
+                await update.message.reply_text(get_message("ai_empty_response"))
                 return
             
             await update.message.reply_text(ai_response)
@@ -33,19 +34,19 @@ async def _handle_ai_mode(update: Update, message_text: str, user_info: str, con
     
     except ConnectionError as e:
         logger.error("Connection error during AI processing for user %s: %s", user_info, e)
-        await update.message.reply_text("I'm having trouble connecting to the AI service. Please try again later.")
+        await update.message.reply_text(get_message("ai_connection_error"))
     
     except TimeoutError as e:
         logger.error("Timeout error during AI processing for user %s: %s", user_info, e)
-        await update.message.reply_text("The AI service is taking too long to respond. Please try again.")
+        await update.message.reply_text(get_message("ai_timeout_error"))
     
     except ValueError as e:
         logger.error("Invalid input for AI processing for user %s: %s", user_info, e)
-        await update.message.reply_text("I couldn't process your message. Please try rephrasing it.")
+        await update.message.reply_text(get_message("ai_invalid_input"))
     
     except Exception as e:
         logger.error("Unexpected error during AI processing for user %s: %s", user_info, e)
-        await update.message.reply_text("I'm sorry, I'm having trouble processing your message right now.")
+        await update.message.reply_text(get_message("ai_processing_error"))
 
 
 async def _handle_echo_mode(update: Update, message_text: str, user_info: str):
@@ -54,7 +55,7 @@ async def _handle_echo_mode(update: Update, message_text: str, user_info: str):
         # Validate message length for echo
         if len(message_text) > 4000:  # Telegram message limit is 4096 characters
             logger.warning("Message too long for echo from user %s (length: %d)", user_info, len(message_text))
-            await update.message.reply_text("Your message is too long to echo. Please send a shorter message.")
+            await update.message.reply_text(get_message("echo_message_too_long"))
             return
         
         echo_response = f"Echo: {message_text}"
@@ -64,7 +65,7 @@ async def _handle_echo_mode(update: Update, message_text: str, user_info: str):
     except Exception as e:
         logger.error("Error during Echo mode processing for user %s: %s", user_info, e)
         try:
-            await update.message.reply_text("I'm sorry, I couldn't echo your message due to a technical issue.")
+            await update.message.reply_text(get_message("echo_technical_error"))
         except Exception as send_error:
             logger.error("Failed to send error message to user %s: %s", user_info, send_error)
 
@@ -85,10 +86,53 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     logger.debug("Processing message from user %s: %s", user_info, message_text[:50] + "..." if len(message_text) > 50 else message_text)
     
+    # Check if it's a keyboard button message and handle it
+    keyboard_buttons = {
+        get_message("keyboard_schedule_base"): "schedule_base",
+        get_message("keyboard_schedule_dest"): "schedule_dest",
+        get_message("keyboard_help"): "help",
+        get_message("keyboard_profile"): "profile",
+    }
+    
+    if message_text in keyboard_buttons:
+        button_action = keyboard_buttons[message_text]
+        logger.debug("Keyboard button pressed by user %s: %s", user_info, button_action)
+        
+        # Get user's stations for schedule buttons
+        from services.database.user_service import UserService
+        user = update.effective_user
+        telegram_id = getattr(user, "id", None) if user else None
+        
+        if button_action in ["schedule_base", "schedule_dest"]:
+            if not telegram_id:
+                await update.message.reply_text(get_message("error_generic"))
+                return
+            
+            db_user = await UserService.get_user(telegram_id)
+            if not db_user or not db_user.base_station_code or not db_user.destination_code:
+                await update.message.reply_text(get_message("echo_set_stations_first"))
+                return
+            
+            # Trigger schedule command with appropriate station
+            station_code = db_user.base_station_code if button_action == "schedule_base" else db_user.destination_code
+            # Create a synthetic command context
+            from app.telegram.handlers.commands.schedule import function as schedule_function
+            context.args = [station_code]
+            await schedule_function(update, context)
+            return
+        elif button_action == "help":
+            from app.telegram.handlers.commands.help import function as help_function
+            await help_function(update, context)
+            return
+        elif button_action == "profile":
+            from app.telegram.handlers.commands.profile import function as profile_function
+            await profile_function(update, context)
+            return
+    
     # Check if it's a station ID - handle as before
     if is_valid_station_id(message_text):
         try:
-            await update.message.reply_text(f"Use /schedule {message_text} for schedule info.")
+            await update.message.reply_text(get_message("echo_station_id_suggestion", station_id=message_text))
             logger.debug("Station ID suggestion sent to user %s for: %s", user_info, message_text)
         except Exception as e:
             logger.error("Failed to send station ID suggestion to user %s: %s", user_info, e)

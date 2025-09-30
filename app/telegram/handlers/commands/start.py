@@ -45,8 +45,8 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard_profile = get_message("keyboard_profile")
         
         keyboard = [
-            [KeyboardButton(f"/schedule {db_user.base_station_code}"), KeyboardButton(f"/schedule {db_user.destination_code}")],
-            [KeyboardButton("/help"), KeyboardButton("/profile")],
+            [KeyboardButton(keyboard_base), KeyboardButton(keyboard_dest)],
+            [KeyboardButton(keyboard_help), KeyboardButton(keyboard_profile)],
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         
