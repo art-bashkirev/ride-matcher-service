@@ -125,7 +125,8 @@ MESSAGES = {
     "keyboard_profile": f"{EMOJIS['user']} Профиль",
     
     # Echo/Message handlers
-    "echo_station_id_suggestion": "Используйте /schedule {{station_id}} для получения информации о расписании.",
+    "echo_station_id_suggestion": "Используйте /schedule {station_id} для получения информации о расписании.",
+    "echo_set_stations_first": "⚠️ Пожалуйста, сначала установите ваши станции с помощью /setstations!",
     
     # AI Mode messages
     "ai_mode_not_configured": "Режим AI включён, но не настроен должным образом.",

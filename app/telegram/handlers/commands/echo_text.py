@@ -110,7 +110,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             db_user = await UserService.get_user(telegram_id)
             if not db_user or not db_user.base_station_code or not db_user.destination_code:
-                await update.message.reply_text("⚠️ Пожалуйста, сначала установите ваши станции с помощью /setstations!")
+                await update.message.reply_text(get_message("echo_set_stations_first"))
                 return
             
             # Trigger schedule command with appropriate station
