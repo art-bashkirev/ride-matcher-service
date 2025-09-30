@@ -10,7 +10,7 @@ from app.telegram.utils import (
     paginate_schedule,
     create_pagination_keyboard
 )
-from app.telegram.i18n import get_i18n_manager, Language
+from app.telegram.messages import get_message
 from config.log_setup import get_logger
 from config.settings import get_config
 from services.yandex_schedules.cached_client import CachedYandexSchedules
@@ -29,22 +29,14 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     telegram_id = getattr(user, "id", None) if user else None
     username = user.username if user else "unknown"
-    
-    i18n = get_i18n_manager()
-    
-    # Get user language from DB, cache, or Telegram locale
-    user_language = None
-    if telegram_id:
-        telegram_locale = user.language_code if user and hasattr(user, 'language_code') else None
-        user_language = await i18n.get_user_language_preference(telegram_id, telegram_locale)
 
     if not context.args:
-        # Use i18n for error messages
-        help_title = i18n.get_message("schedule_cmd_help_title", telegram_id, user_language)
-        missing_id = i18n.get_message("schedule_cmd_missing_id", telegram_id, user_language)
-        usage = i18n.get_message("schedule_cmd_usage", telegram_id, user_language)
-        format_info = i18n.get_message("schedule_cmd_format", telegram_id, user_language)
-        tip = i18n.get_message("schedule_cmd_tip", telegram_id, user_language)
+        # Use messages for error messages
+        help_title = get_message("schedule_cmd_help_title")
+        missing_id = get_message("schedule_cmd_missing_id")
+        usage = get_message("schedule_cmd_usage")
+        format_info = get_message("schedule_cmd_format")
+        tip = get_message("schedule_cmd_tip")
         
         await update.message.reply_text(
             f"{help_title}\n"
@@ -59,11 +51,11 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     station_id = context.args[0]
     if not is_valid_station_id(station_id):
-        # Use i18n for error messages
-        error_title = i18n.get_message("schedule_error_invalid_format", telegram_id, user_language)
-        you_entered = i18n.get_message("schedule_error_you_entered", telegram_id, user_language, station_id=station_id)
-        expected_format = i18n.get_message("schedule_error_expected_format", telegram_id, user_language)
-        try_again = i18n.get_message("schedule_error_try_again", telegram_id, user_language)
+        # Use messages for error messages
+        error_title = get_message("schedule_error_invalid_format")
+        you_entered = get_message("schedule_error_you_entered", station_id=station_id)
+        expected_format = get_message("schedule_error_expected_format")
+        try_again = get_message("schedule_error_try_again")
         
         await update.message.reply_text(
             f"{error_title}\n"
@@ -75,9 +67,9 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info("User %s requested schedule with parsing error", username)
         return
 
-    # Show loading message using i18n
+    # Show loading message
     loading_message = await update.message.reply_text(
-        i18n.get_message("loading", telegram_id, user_language)
+        get_message("loading")
     )
 
     logger.info("Trying to serve schedule to User %s ", username)
@@ -108,12 +100,12 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         paginated_items, current_page, total_pages = paginate_schedule(filtered_schedule, page=1)
 
         if not paginated_items:
-            error_message = format_schedule_reply(station_id, today, [], 1, 1, telegram_id, user_language)
+            error_message = format_schedule_reply(station_id, today, [], 1, 1)
             await loading_message.edit_text(error_message)
             return
 
-        # Format the response using i18n
-        reply_text = format_schedule_reply(station_id, today, paginated_items, current_page, total_pages, telegram_id, user_language)
+        # Format the response
+        reply_text = format_schedule_reply(station_id, today, paginated_items, current_page, total_pages)
 
         # Add data source information for transparency
         final_text = f"{reply_text}\n\n{data_source}"
@@ -137,7 +129,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         logger.error("Error fetching schedule for station %s: %s", station_id, str(e))
-        error_msg = i18n.get_message("error_generic", telegram_id, user_language)
+        error_msg = get_message("error_generic")
 
         try:
             await loading_message.edit_text(error_msg)
