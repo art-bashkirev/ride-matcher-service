@@ -297,9 +297,10 @@ class YandexSchedulesCache(BaseRedisClient):
 
     async def shutdown(self):
         """Properly close Redis connection on application shutdown."""
-        if self._redis and not self._redis.connection_pool.connection_kwargs.get('closed', False):
-            await self._redis.aclose()
-            self._redis = None
+        redis_client = type(self)._redis
+        if redis_client:
+            await redis_client.close()
+            type(self)._redis = None
             logger.info("Redis connection closed gracefully")
 
 

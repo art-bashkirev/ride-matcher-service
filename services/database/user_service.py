@@ -23,7 +23,7 @@ class UserService:
 
         await Tortoise.init(
             db_url=config.postgresql_uri,
-            modules={"models": ["models.user"]}
+            modules={"models": ["models.user", "models.feature_flag"]}
         )
         # Try to generate schemas, but don't fail if they already exist
         try:
