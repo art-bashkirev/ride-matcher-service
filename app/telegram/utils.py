@@ -113,29 +113,29 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
                 departure_time = departure_dt.strftime('%H:%M')
                 arr_text = i18n.get_message("schedule_arrives", user_id, language)
                 dep_text = i18n.get_message("schedule_departs", user_id, language)
-                time_info = f"⏰ {arr_text}: {arrival_time}  •  {dep_text}: {departure_time}"
+                time_info = f"🕒 {arr_text}: {arrival_time}  •  {dep_text}: {departure_time}"
             except (ValueError, AttributeError):
                 arr_text = i18n.get_message("schedule_arrives", user_id, language)
                 dep_text = i18n.get_message("schedule_departs", user_id, language)
-                time_info = f"⏰ {arr_text}: {schedule_item.arrival}  •  {dep_text}: {schedule_item.departure}"
+                time_info = f"🕒 {arr_text}: {schedule_item.arrival}  •  {dep_text}: {schedule_item.departure}"
         elif schedule_item.departure:
             try:
                 dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
                 departure_time = dt.strftime('%H:%M')
                 dep_text = i18n.get_message("schedule_departure", user_id, language)
-                time_info = f"⏰ {dep_text}: {departure_time}"
+                time_info = f"🕒 {dep_text}: {departure_time}"
             except (ValueError, AttributeError):
                 dep_text = i18n.get_message("schedule_departure", user_id, language)
-                time_info = f"⏰ {dep_text}: {schedule_item.departure}"
+                time_info = f"🕒 {dep_text}: {schedule_item.departure}"
         elif schedule_item.arrival:
             try:
                 dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
                 arrival_time = dt.strftime('%H:%M')
                 arr_text = i18n.get_message("schedule_arrival", user_id, language)
-                time_info = f"⏰ {arr_text}: {arrival_time}"
+                time_info = f"🕒 {arr_text}: {arrival_time}"
             except (ValueError, AttributeError):
                 arr_text = i18n.get_message("schedule_arrival", user_id, language)
-                time_info = f"⏰ {arr_text}: {schedule_item.arrival}"
+                time_info = f"🕒 {arr_text}: {schedule_item.arrival}"
         else:
             time_info = i18n.get_message("schedule_time_na", user_id, language)
 
@@ -155,16 +155,16 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
         platform_info = ""
         if schedule_item.platform:
             platform_text = i18n.get_message("schedule_platform", user_id, language)
-            platform_info = f"  🚏 {platform_text} {schedule_item.platform}"
+            platform_info = f"  🚉 {platform_text} {schedule_item.platform}"
 
         # Enhanced formatting with better structure and spacing
-        reply_text += f"🚄 {thread_info}\n"
+        reply_text += f"🚂 {thread_info}\n"
         reply_text += f"{time_info}{platform_info}\n"
 
         # Add stops information if available and not too long
         if schedule_item.stops and len(schedule_item.stops) < 50:
             stops_text = i18n.get_message("schedule_stops", user_id, language)
-            reply_text += f"🗺️ {stops_text}: {schedule_item.stops}\n"
+            reply_text += f"📍 {stops_text}: {schedule_item.stops}\n"
 
         # Add visual separator between entries for better readability
         reply_text += "─" * 25 + "\n\n"

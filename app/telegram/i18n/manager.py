@@ -26,6 +26,28 @@ class I18nManager:
         """
         self._user_languages[user_id] = language
     
+    async def get_user_language_from_db(self, user_id: int) -> Optional[Language]:
+        """Get user language from database.
+        
+        Args:
+            user_id: Telegram user ID
+            
+        Returns:
+            User's language from DB or None
+        """
+        try:
+            from services.database.user_service import UserService
+            user = await UserService.get_user(user_id)
+            if user and user.language:
+                # Convert string to Language enum
+                if user.language.lower() == 'ru':
+                    return Language.RU
+                elif user.language.lower() == 'en':
+                    return Language.EN
+        except Exception:
+            pass
+        return None
+    
     def get_user_language(self, user_id: int) -> Language:
         """Get language preference for a user.
         
