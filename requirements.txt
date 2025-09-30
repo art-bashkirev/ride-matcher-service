@@ -10,3 +10,4 @@ tortoise-orm[psycopg]
 tortoise-orm[asyncpg]
 tortoise-orm[accel]
 pymongo
+motor
