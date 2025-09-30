@@ -19,7 +19,7 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Build profile message
     header = get_message("profile_title")
-    separator = "═══════════════════════"
+    separator = get_message("separator")
     
     username_label = get_message("profile_username")
     first_name_label = get_message("profile_first_name")

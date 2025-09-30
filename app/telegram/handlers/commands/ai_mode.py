@@ -7,6 +7,7 @@ from config.log_setup import get_logger
 from config.settings import get_config
 from services.database.user_service import UserService
 from services.ai.flag_service import AIFlagService
+from app.telegram.messages import get_message
 
 logger = get_logger(__name__)
 
@@ -33,16 +34,16 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_user = await UserService.get_user(user.id)
         if not db_user:
             logger.warning("User %s attempted to use ai_mode without starting bot first", user_info)
-            await update.message.reply_text("You need to start the bot first with /start")
+            await update.message.reply_text(get_message("ai_mode_start_required"))
             return
         
         if not db_user.is_admin:
             logger.warning("Non-admin user %s attempted to use ai_mode command", user_info)
-            await update.message.reply_text("This command is only available to administrators.")
+            await update.message.reply_text(get_message("ai_mode_admin_only"))
             return
     except Exception as e:
         logger.error("Database error while checking user %s for ai_mode command: %s", user_info, e)
-        await update.message.reply_text("❌ Unable to verify user permissions. Please try again later.")
+        await update.message.reply_text(get_message("ai_mode_permission_error"))
         return
 
     # Parse command arguments
@@ -54,16 +55,17 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
             async with AIFlagService() as flag_service:
                 current_status = await flag_service.is_ai_mode_enabled()
             
-            status_text = "enabled" if current_status else "disabled"
+            status_word = get_message("ai_mode_status_enabled" if current_status else "ai_mode_status_disabled")
+            status_text = get_message("ai_mode_status", status=status_word)
+            usage_hint = get_message("ai_mode_usage_hint")
             await update.message.reply_text(
-                f"AI mode is currently *{status_text}*\n\n"
-                f"Use `/ai_mode on` to enable or `/ai_mode off` to disable AI mode.",
+                f"{status_text}\n\n{usage_hint}",
                 parse_mode="Markdown"
             )
             logger.debug("AI mode status shown to admin user %s: %s", user_info, status_text)
         except Exception as e:
             logger.error("Failed to check AI mode status for user %s: %s", user_info, e)
-            await update.message.reply_text("❌ Unable to check AI mode status. Please try again later.")
+            await update.message.reply_text(get_message("ai_mode_error_checking"))
         return
     
     command = args[0].lower()
@@ -71,10 +73,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if command not in ["on", "off", "enable", "disable", "true", "false"]:
         logger.warning("Invalid ai_mode command from user %s: %s", user_info, command)
         await update.message.reply_text(
-            "Invalid command. Use:\n"
-            "• `/ai_mode on` to enable AI mode\n"
-            "• `/ai_mode off` to disable AI mode\n"
-            "• `/ai_mode` to check current status",
+            get_message("ai_mode_invalid_command"),
             parse_mode="Markdown"
         )
         return
@@ -88,15 +87,15 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
             success = await flag_service.set_ai_mode(enable_ai)
         
         if success:
-            status_text = "enabled" if enable_ai else "disabled"
+            status_word = get_message("ai_mode_status_enabled" if enable_ai else "ai_mode_status_disabled")
             await update.message.reply_text(
-                f"✅ AI mode has been *{status_text}*",
+                get_message("ai_mode_updated", status=status_word),
                 parse_mode="Markdown"
             )
             logger.info("Admin user %s successfully changed AI mode to: %s", user_info, enable_ai)
         else:
-            await update.message.reply_text("❌ Failed to update AI mode. Please try again later.")
+            await update.message.reply_text(get_message("ai_mode_update_failed"))
             logger.error("Failed to update AI mode for admin user %s (operation returned false)", user_info)
     except Exception as e:
         logger.error("Exception while updating AI mode for admin user %s: %s", user_info, e)
-        await update.message.reply_text("❌ An error occurred while updating AI mode. Please try again later.")
+        await update.message.reply_text(get_message("ai_mode_error_updating"))

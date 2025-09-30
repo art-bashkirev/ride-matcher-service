@@ -12,6 +12,7 @@ from app.telegram.utils import (
     paginate_schedule,
     create_pagination_keyboard
 )
+from app.telegram.messages import get_message
 from config.log_setup import get_logger
 from config.settings import get_config
 from services.yandex_schedules.cached_client import CachedYandexSchedules
@@ -48,31 +49,37 @@ async def _fetch_and_format_schedule(station_id: str, page: int = 1) -> Tuple[st
     # Use cached client to fetch schedule
     async with CachedYandexSchedules() as client:
         schedule_response, was_cached = await client.get_schedule(schedule_request)
-    
-    # Filter to show only upcoming departures from the large cached set
-    filtered_schedule = filter_upcoming_departures(schedule_response.schedule)
-    
-    # Paginate the results
+
+    schedule_items = schedule_response.schedule or []
+    filtered_schedule = filter_upcoming_departures(schedule_items)
+
     paginated_items, current_page, total_pages = paginate_schedule(filtered_schedule, page)
-    
+
     if not paginated_items:
-        error_message = f"📅 No upcoming departures found for station {station_id} on {today}" if page == 1 else f"📅 No departures found for station {station_id} on {today}"
+        if page == 1:
+            error_message = get_message("schedule_no_upcoming_departures", station_id=station_id, date=today)
+        else:
+            error_message = get_message("schedule_no_departures_generic", station_id=station_id, date=today)
         raise ValueError(error_message)
-    
-    # Format the response
+
     reply_text = format_schedule_reply(station_id, today, paginated_items, current_page, total_pages)
-    
-    # Add data source information for transparency
-    data_source = "💾 Data from cache" if was_cached else "🌐 Fresh data from API"
+
+    data_source = get_message("schedule_data_source_cache") if was_cached else get_message("schedule_data_source_api")
     final_text = f"{reply_text}\n\n{data_source}"
-    
-    # Include station information if available
+
     if schedule_response.station and schedule_response.station.title:
-        station_info = f"\n🏛️ Station: {schedule_response.station.title}"
+        station_type_suffix = ""
         if schedule_response.station.station_type_name:
-            station_info += f" ({schedule_response.station.station_type_name})"
-        final_text = final_text.replace(f"station {station_id}",
-                                        f"station {station_id}{station_info}")
+            station_type_suffix = f" ({schedule_response.station.station_type_name})"
+        station_info = get_message(
+            "schedule_station_info",
+            title=schedule_response.station.title,
+            station_type=station_type_suffix,
+        )
+        final_text = final_text.replace(
+            f"station {station_id}",
+            f"station {station_id}{station_info}"
+        )
     
     # Create pagination keyboard
     keyboard = create_pagination_keyboard(station_id, current_page, total_pages)
@@ -96,11 +103,11 @@ async def handle_schedule_from_search(update: Update, context: ContextTypes.DEFA
         station_id = query.data[9:]  # Remove "schedule_" prefix
 
         if not is_valid_station_id(station_id):
-            await query.edit_message_text("❌ Invalid station ID format")
+            await query.edit_message_text(get_message("schedule_invalid_station_id"))
             return
 
         # Show loading state
-        await query.edit_message_text("⏳ Loading schedule...")
+        await query.edit_message_text(get_message("schedule_loading_schedule"))
 
         # Use shared function to fetch and format schedule
         final_text, keyboard = await _fetch_and_format_schedule(station_id, page=1)
@@ -116,7 +123,7 @@ async def handle_schedule_from_search(update: Update, context: ContextTypes.DEFA
         await query.edit_message_text(str(e))
     except Exception as e:
         logger.error("Error handling schedule from search: %s", str(e))
-        await query.edit_message_text("❌ Error loading schedule. Please try again.")
+        await query.edit_message_text(get_message("schedule_error_loading_schedule"))
 
 
 async def handle_schedule_pagination(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -137,11 +144,11 @@ async def handle_schedule_pagination(update: Update, context: ContextTypes.DEFAU
         page = int(parts[2])
 
         if not is_valid_station_id(station_id):
-            await query.edit_message_text("❌ Invalid station ID format")
+            await query.edit_message_text(get_message("schedule_invalid_station_id"))
             return
 
         # Show loading state
-        await query.edit_message_text("⏳ Loading page...")
+        await query.edit_message_text(get_message("schedule_loading_page"))
 
         # Use shared function to fetch and format schedule
         final_text, keyboard = await _fetch_and_format_schedule(station_id, page)
@@ -155,12 +162,12 @@ async def handle_schedule_pagination(update: Update, context: ContextTypes.DEFAU
     except ValueError as e:
         # Handle invalid page number or no departures
         if "Invalid page number" in str(e):
-            await query.edit_message_text("❌ Invalid page number")
+            await query.edit_message_text(get_message("schedule_invalid_page_number"))
         else:
             await query.edit_message_text(str(e))
     except Exception as e:
         logger.error("Error handling schedule pagination: %s", str(e))
-        await query.edit_message_text("❌ Error loading schedule page. Please try again.")
+        await query.edit_message_text(get_message("schedule_error_loading_page"))
 
 
 async def handle_noop_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):

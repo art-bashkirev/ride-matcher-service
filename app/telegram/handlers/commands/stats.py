@@ -2,6 +2,7 @@ from telegram import Update, ForceReply
 from telegram.ext import ContextTypes
 
 from config.log_setup import get_logger
+from app.telegram.messages import get_message
 
 from services.yandex_schedules.cached_client import CachedYandexSchedules
 
@@ -18,14 +19,24 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mention = user.mention_html() if user else "there"
     logger.info("User %s requested stats", user.username if user else "unknown")
 
-    async with CachedYandexSchedules() as client:   
+    async with CachedYandexSchedules() as client:
         stats = await client.get_cache_stats()
 
+    title = get_message("stats_title")
+    separator = get_message("separator")
+    intro = get_message("stats_intro", mention=mention)
+    stats_body = get_message("stats_message", stats=stats)
+    tip = get_message("stats_tip")
+
+    message_text = (
+        f"{title}\n"
+        f"{separator}\n\n"
+        f"{intro}\n\n"
+        f"{stats_body}\n\n"
+        f"{tip}"
+    )
+
     await update.message.reply_html(
-        f"📊 **Cache Statistics**\n"
-        f"══════════════════════\n\n"
-        f"Hi {mention}! Here are the current cache statistics:\n\n"
-        f"📈 **Stats:** {stats}\n\n"
-        f"💡 *Cache helps improve response times by storing frequently accessed data.*",
+        message_text,
         reply_markup=ForceReply(selective=True)
     )

@@ -37,10 +37,11 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         usage = get_message("schedule_cmd_usage")
         format_info = get_message("schedule_cmd_format")
         tip = get_message("schedule_cmd_tip")
+        separator = get_message("separator")
         
         await update.message.reply_text(
             f"{help_title}\n"
-            f"══════════════════════════\n\n"
+            f"{separator}\n\n"
             f"{missing_id}\n\n"
             f"{usage}\n\n"
             f"{format_info}\n\n"
@@ -56,10 +57,11 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         you_entered = get_message("schedule_error_you_entered", station_id=station_id)
         expected_format = get_message("schedule_error_expected_format")
         try_again = get_message("schedule_error_try_again")
+        separator = get_message("separator")
         
         await update.message.reply_text(
             f"{error_title}\n"
-            f"═══════════════════════════════\n\n"
+            f"{separator}\n\n"
             f"{you_entered}\n\n"
             f"{expected_format}\n\n"
             f"{try_again}"
@@ -91,10 +93,11 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
             schedule_response, was_cached = await client.get_schedule(schedule_request)
 
             # Set data source based on actual cache hit
-            data_source = "💾 Data from cache" if was_cached else "🌐 Fresh data from API"
+            data_source = get_message("schedule_data_source_cache") if was_cached else get_message("schedule_data_source_api")
 
         # Filter to show only upcoming departures from the large cached set
-        filtered_schedule = filter_upcoming_departures(schedule_response.schedule)
+        schedule_items = schedule_response.schedule or []
+        filtered_schedule = filter_upcoming_departures(schedule_items)
 
         # Paginate the results (page 1 by default)
         paginated_items, current_page, total_pages = paginate_schedule(filtered_schedule, page=1)
@@ -112,11 +115,18 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Include station information if available
         if schedule_response.station and schedule_response.station.title:
-            station_info = f"\n🏛️ Station: {schedule_response.station.title}"
+            station_type_suffix = ""
             if schedule_response.station.station_type_name:
-                station_info += f" ({schedule_response.station.station_type_name})"
-            final_text = final_text.replace(f"station {station_id}",
-                                            f"station {station_id}{station_info}")
+                station_type_suffix = f" ({schedule_response.station.station_type_name})"
+            station_info = get_message(
+                "schedule_station_info",
+                title=schedule_response.station.title,
+                station_type=station_type_suffix,
+            )
+            final_text = final_text.replace(
+                f"station {station_id}",
+                f"station {station_id}{station_info}"
+            )
 
         # Create pagination keyboard
         keyboard = create_pagination_keyboard(station_id, current_page, total_pages)

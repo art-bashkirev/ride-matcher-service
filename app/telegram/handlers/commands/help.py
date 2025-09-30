@@ -19,7 +19,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Build help message
     title = get_message("help_title")
-    separator = "═══════════════════════"
+    separator = get_message("separator")
     commands = get_message("help_commands")
     need_help = get_message("help_need_help")
     

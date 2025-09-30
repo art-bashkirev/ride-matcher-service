@@ -15,6 +15,7 @@ from types import SimpleNamespace
 from config.log_setup import get_logger
 from services.database.user_service import UserService
 from services.mongodb.stations_service import get_stations_service
+from app.telegram.messages import get_message
 
 logger = get_logger(__name__)
 
@@ -27,6 +28,18 @@ STATION_CONFIRM = "station_confirm:"
 
 
 ## Insert helper function for creating station objects
+
+
+def _station_details(station: Any) -> Dict[str, str]:
+    """Extract display-friendly station details with safe fallbacks."""
+    if not station:
+        return {"title": "-", "code": "-", "settlement": "-"}
+
+    title = getattr(station, "title", "-") or "-"
+    code = getattr(station, "code", "-") or "-"
+    settlement = getattr(station, "settlement_title", "-") or "-"
+
+    return {"title": title, "code": code, "settlement": settlement}
 
 
 async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -51,7 +64,7 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
         dest_exists = bool(getattr(db_user, 'destination_code', None))
         if base_exists and dest_exists:
             logger.info("User %s already has stations set, preventing update", user.username if user.username else user.id)
-            await update.message.reply_text("You have already set your stations. Updating is not allowed. Type /cancel to cancel.")
+            await update.message.reply_text(get_message("setstations_already_set"))
             return ConversationHandler.END
         elif base_exists and not dest_exists:
             context.user_data['base_station'] = SimpleNamespace(
@@ -60,10 +73,15 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 settlement_title=getattr(db_user, 'base_station_settlement', 'Unknown'),
                 direction=''
             )
+            base_title = getattr(db_user, 'base_station_title', '-') or '-'
+            base_code = getattr(db_user, 'base_station_code', '-') or '-'
             logger.info("User %s has base station set but missing destination, prompting for destination", user.username if user.username else user.id)
             await update.message.reply_text(
-                f"We have your base station set to: {db_user.base_station_title} ({db_user.base_station_code}).\n"
-                "Please enter your destination station. Type /cancel to cancel."
+                get_message(
+                    "setstations_destination_pending",
+                    base_title=base_title,
+                    base_code=base_code,
+                )
             )
             return CHOOSING_DEST
         elif dest_exists and not base_exists:
@@ -73,25 +91,31 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 settlement_title=getattr(db_user, 'destination_settlement', 'Unknown'),
                 direction=''
             )
+            dest_title = getattr(db_user, 'destination_title', '-') or '-'
+            dest_code = getattr(db_user, 'destination_code', '-') or '-'
             logger.info("User %s has destination station set but missing base, prompting for base station", user.username if user.username else user.id)
             await update.message.reply_text(
-                f"We have your destination station set to: {db_user.destination_title} ({db_user.destination_code}).\n"
-                "Please enter your base station. Type /cancel to cancel."
+                get_message(
+                    "setstations_base_pending",
+                    dest_title=dest_title,
+                    dest_code=dest_code,
+                )
             )
             return CHOOSING_BASE
 
     logger.info("User %s entering base station selection", user.username if user.username else user.id)
 
-    await update.message.reply_text(
-        "🚂 **Station Setup Wizard**\n"
-        "═══════════════════════════\n\n"
-        "🏠 **Step 1: Base Station**\n\n"
-        "Let's configure your base station (where you usually start your journey).\n\n"
-        "💡 **How to enter:**\n"
-        "• Station name (e.g., 'Moscow Central')\n"
-        "• Station code (e.g., 's1234567')\n\n"
-        "📝 Please type your base station name or code:"
+    separator = get_message("separator")
+    intro_message = (
+        f"{get_message('setstations_title')}\n"
+        f"{separator}\n\n"
+        f"{get_message('setstations_step1')}\n\n"
+        f"{get_message('setstations_intro_description')}\n\n"
+        f"{get_message('setstations_how_to_enter')}\n"
+        f"{get_message('setstations_entry_options')}\n\n"
+        f"{get_message('setstations_enter_base')}"
     )
+    await update.message.reply_text(intro_message)
     return CHOOSING_BASE
 
 
@@ -101,7 +125,7 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
         return CHOOSING_BASE
     query = (update.message.text or "").strip()
     if not query:
-        await update.message.reply_text("Please enter a station name or code.")
+        await update.message.reply_text(get_message("setstations_empty_input"))
         return CHOOSING_BASE
 
     user = update.effective_user
@@ -121,13 +145,13 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.info("User %s base station search returned %d results", user_id, len(stations) if stations else 0)
     except Exception as e:
         logger.error("User %s failed to search stations: %s", user_id, e)
-        await update.message.reply_text("Sorry, there was an error searching stations. Please try again.")
+        await update.message.reply_text(get_message("setstations_search_error"))
         return CHOOSING_BASE
 
     if not stations:
         logger.info("User %s base station search found no results for query: '%s'", user_id, query)
         await update.message.reply_text(
-            f"No stations found for '{query}'. Please try a different name or code."
+            get_message("setstations_no_stations_found", query=query)
         )
         return CHOOSING_BASE
 
@@ -142,7 +166,11 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        f"Found {len(stations)} stations. Please select your base station:",
+        get_message(
+            "setstations_stations_found",
+            count=len(stations),
+            station_type=get_message("setstations_type_base"),
+        ),
         reply_markup=reply_markup
     )
     return CHOOSING_BASE  # Stay in state until selection
@@ -157,10 +185,7 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
 
     user = update.effective_user
     if user is not None:
-        if user.username:
-            user_id = user.username
-        else:
-            user_id = user.id
+        user_id = user.username if user.username else user.id
     else:
         user_id = "unknown"
 
@@ -175,102 +200,113 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
     station_type, code = parts
     logger.info("User %s selected %s station with code: %s", user_id, station_type, code)
 
-    # Get station details
     service = get_stations_service()
     try:
         station = await service.get_station_by_code(code)
     except Exception as e:
         logger.error("User %s failed to get station %s: %s", user_id, code, e)
-        await query.edit_message_text("Error retrieving station details. Please try again.")
+        await query.edit_message_text(get_message("setstations_station_fetch_error"))
         return ConversationHandler.END
 
     if not station:
         logger.warning("User %s selected non-existent station with code: %s", user_id, code)
-        await query.edit_message_text("Station not found. Please try again.")
+        await query.edit_message_text(get_message("setstations_station_not_found"))
         return ConversationHandler.END
 
-    # Store selection
+    station_details = _station_details(station)
+    separator = get_message("separator")
+    location_label = get_message("setstations_location")
+
     if station_type == "base":
         context.user_data["base_station"] = station
-        title = getattr(station, "title", "-") if hasattr(station, "title") else "-"
-        code = getattr(station, "code", "-") if hasattr(station, "code") else "-"
-        settlement_title = getattr(station, "settlement_title", "-") if hasattr(station, "settlement_title") else "-"
-        logger.info("User %s set base station: %s (%s) - %s", user_id, title, code, settlement_title)
+        logger.info(
+            "User %s set base station: %s (%s) - %s",
+            user_id,
+            station_details["title"],
+            station_details["code"],
+            station_details["settlement"],
+        )
         existing_dest = context.user_data.get("destination_station") if context.user_data else None
         if existing_dest:
-            dest_title = getattr(existing_dest, "title", "-") if hasattr(existing_dest, "title") else "-"
-            dest_code = getattr(existing_dest, "code", "-") if hasattr(existing_dest, "code") else "-"
-            dest_settlement = getattr(existing_dest, "settlement_title", "-") if hasattr(existing_dest, "settlement_title") else "-"
+            dest_details = _station_details(existing_dest)
             keyboard = [
-                [InlineKeyboardButton("Yes, save", callback_data=f"{STATION_CONFIRM}yes")],
-                [InlineKeyboardButton("No, start over", callback_data=f"{STATION_CONFIRM}no")],
+                [InlineKeyboardButton(get_message("setstations_button_yes"), callback_data=f"{STATION_CONFIRM}yes")],
+                [InlineKeyboardButton(get_message("setstations_button_no"), callback_data=f"{STATION_CONFIRM}no")],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             logger.info(
                 "User %s entering confirmation with base: %s (%s), dest: %s (%s)",
                 user_id,
-                title,
-                code,
-                dest_title,
-                dest_code,
+                station_details["title"],
+                station_details["code"],
+                dest_details["title"],
+                dest_details["code"],
             )
-            await query.edit_message_text(
-                f"✅ **Confirm Your Station Settings**\n"
-                f"═══════════════════════════════\n\n"
-                f"🏠 **Base Station:**\n"
-                f"     📍 {title}\n"
-                f"     🔗 Code: {code}\n"
-                f"     🌍 Location: {settlement_title}\n\n"
-                f"🎯 **Destination Station:**\n"
-                f"     📍 {dest_title}\n"
-                f"     🔗 Code: {dest_code}\n"
-                f"     🌍 Location: {dest_settlement}\n\n"
-                f"❓ **Is this information correct?**",
-                reply_markup=reply_markup,
+            confirmation_text = (
+                f"{get_message('setstations_confirm_title')}\n"
+                f"{separator}\n\n"
+                f"{get_message('setstations_base_station_section')}\n"
+                f"{get_message('setstations_station_summary', title=station_details['title'], code=station_details['code'], settlement=station_details['settlement'], location_label=location_label)}\n\n"
+                f"{get_message('setstations_destination_section')}\n"
+                f"{get_message('setstations_station_summary', title=dest_details['title'], code=dest_details['code'], settlement=dest_details['settlement'], location_label=location_label)}\n\n"
+                f"{get_message('setstations_confirm_question')}"
             )
+            await query.edit_message_text(confirmation_text, reply_markup=reply_markup)
             return CONFIRM
-        await query.edit_message_text(
-            f"🏠 **Base Station Set Successfully!**\n"
-            f"═══════════════════════════════════\n\n"
-            f"📍 **Station:** {title}\n"
-            f"🔗 **Code:** {code}\n"
-            f"🌍 **Location:** {settlement_title}\n\n"
-            f"🎯 **Next Step:** Please enter your destination station\n"
-            f"(Where you transfer from suburban to metro)\n\n"
-            f"💡 **Tip:** Enter the station name or code below"
+
+        base_summary = get_message(
+            "setstations_station_summary",
+            title=station_details["title"],
+            code=station_details["code"],
+            settlement=station_details["settlement"],
+            location_label=location_label,
         )
+        message_text = (
+            f"{get_message('setstations_base_set_success')}\n"
+            f"{separator}\n\n"
+            f"{get_message('setstations_base_station_section')}\n"
+            f"{base_summary}\n\n"
+            f"{get_message('setstations_next_step')}\n"
+            f"{get_message('setstations_enter_destination')}"
+        )
+        await query.edit_message_text(message_text)
         return CHOOSING_DEST
-    elif station_type == "dest":
+
+    if station_type == "dest":
         context.user_data["destination_station"] = station
+        dest_details = station_details
         base = context.user_data.get("base_station") if context.user_data else None
-        dest = station
-        base_title = getattr(base, "title", "-") if base and hasattr(base, "title") else "-"
-        base_code = getattr(base, "code", "-") if base and hasattr(base, "code") else "-"
-        base_settlement = getattr(base, "settlement_title", "-") if base and hasattr(base, "settlement_title") else "-"
-        dest_title = getattr(dest, "title", "-") if dest and hasattr(dest, "title") else "-"
-        dest_code = getattr(dest, "code", "-") if dest and hasattr(dest, "code") else "-"
-        dest_settlement = getattr(dest, "settlement_title", "-") if dest and hasattr(dest, "settlement_title") else "-"
-        logger.info("User %s set destination station: %s (%s) - %s", user_id, dest_title, dest_code, dest_settlement)
-        logger.info("User %s entering confirmation with base: %s (%s), dest: %s (%s)", user_id, base_title, base_code, dest_title, dest_code)
+        base_details = _station_details(base)
+        logger.info(
+            "User %s set destination station: %s (%s) - %s",
+            user_id,
+            dest_details["title"],
+            dest_details["code"],
+            dest_details["settlement"],
+        )
+        logger.info(
+            "User %s entering confirmation with base: %s (%s), dest: %s (%s)",
+            user_id,
+            base_details["title"],
+            base_details["code"],
+            dest_details["title"],
+            dest_details["code"],
+        )
         keyboard = [
-            [InlineKeyboardButton("Yes, save", callback_data=f"{STATION_CONFIRM}yes")],
-            [InlineKeyboardButton("No, start over", callback_data=f"{STATION_CONFIRM}no")],
+            [InlineKeyboardButton(get_message("setstations_button_yes"), callback_data=f"{STATION_CONFIRM}yes")],
+            [InlineKeyboardButton(get_message("setstations_button_no"), callback_data=f"{STATION_CONFIRM}no")],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            f"✅ **Confirm Your Station Settings**\n"
-            f"═══════════════════════════════\n\n"
-            f"🏠 **Base Station:**\n"
-            f"     📍 {base_title}\n"
-            f"     🔗 Code: {base_code}\n"
-            f"     🌍 Location: {base_settlement}\n\n"
-            f"🎯 **Destination Station:**\n"
-            f"     📍 {dest_title}\n"
-            f"     🔗 Code: {dest_code}\n"
-            f"     🌍 Location: {dest_settlement}\n\n"
-            f"❓ **Is this information correct?**",
-            reply_markup=reply_markup
+        confirmation_text = (
+            f"{get_message('setstations_confirm_title')}\n"
+            f"{separator}\n\n"
+            f"{get_message('setstations_base_station_section')}\n"
+            f"{get_message('setstations_station_summary', title=base_details['title'], code=base_details['code'], settlement=base_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_destination_section')}\n"
+            f"{get_message('setstations_station_summary', title=dest_details['title'], code=dest_details['code'], settlement=dest_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_confirm_question')}"
         )
+        await query.edit_message_text(confirmation_text, reply_markup=reply_markup)
         return CONFIRM
 
     return ConversationHandler.END
@@ -282,7 +318,7 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
         return CHOOSING_DEST
     query = (update.message.text or "").strip()
     if not query:
-        await update.message.reply_text("Please enter a station name or code.")
+        await update.message.reply_text(get_message("setstations_empty_input"))
         return CHOOSING_DEST
 
     user = update.effective_user
@@ -302,13 +338,13 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
         logger.info("User %s destination station search returned %d results", user_id, len(stations) if stations else 0)
     except Exception as e:
         logger.error("User %s failed to search stations: %s", user_id, e)
-        await update.message.reply_text("Sorry, there was an error searching stations. Please try again.")
+        await update.message.reply_text(get_message("setstations_search_error"))
         return CHOOSING_DEST
 
     if not stations:
         logger.info("User %s destination station search found no results for query: '%s'", user_id, query)
         await update.message.reply_text(
-            f"No stations found for '{query}'. Please try a different name or code."
+            get_message("setstations_no_stations_found", query=query)
         )
         return CHOOSING_DEST
 
@@ -323,7 +359,11 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        f"Found {len(stations)} stations. Please select your destination station:",
+        get_message(
+            "setstations_stations_found",
+            count=len(stations),
+            station_type=get_message("setstations_type_destination"),
+        ),
         reply_markup=reply_markup
     )
     return CHOOSING_DEST
@@ -353,7 +393,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if confirm == "no":
         logger.info("User %s cancelled station setup", user_id)
-        await query.edit_message_text("Cancelled. Use /setstations to start again.")
+        await query.edit_message_text(get_message("setstations_cancelled_restart"))
         return ConversationHandler.END
 
     logger.info("User %s confirmed station setup, saving to database", user_id)
@@ -365,7 +405,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if not base or not dest:
         logger.error("User %s missing station data during confirmation", user_id)
-        await query.edit_message_text("Missing station data. Please start over.")
+        await query.edit_message_text(get_message("setstations_missing_data"))
         return ConversationHandler.END
 
     try:
@@ -381,7 +421,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         # Only proceed if all required fields are present
         if not (isinstance(telegram_id, int) and base_code and base_title and dest_code and dest_title):
             logger.error("User %s missing required data for saving stations", user_id)
-            await query.edit_message_text("Missing required data. Please start over.")
+            await query.edit_message_text(get_message("setstations_missing_data"))
             return ConversationHandler.END
         await UserService.get_or_create_user(
             telegram_id=telegram_id,
@@ -398,20 +438,23 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         logger.info("User %s successfully saved stations: base=%s (%s), dest=%s (%s)", 
                    user_id, base_title, base_code, dest_title, dest_code)
-        await query.edit_message_text(
-            f"✅ **Stations Saved Successfully!**\n"
-            f"══════════════════════════════\n\n"
-            f"🏠 **Base Station:**\n"
-            f"     📍 {base_title}\n"
-            f"     🔗 {base_code}\n\n"
-            f"🎯 **Destination Station:**\n"
-            f"     📍 {dest_title}\n"
-            f"     🔗 {dest_code}\n\n"
-            f"🎉 Your stations have been saved and are ready to use!"
+        base_details = _station_details(base)
+        dest_details = _station_details(dest)
+        separator = get_message("separator")
+        location_label = get_message("setstations_location")
+        success_text = (
+            f"{get_message('setstations_success_title')}\n"
+            f"{separator}\n\n"
+            f"{get_message('setstations_base_station_section')}\n"
+            f"{get_message('setstations_station_summary', title=base_details['title'], code=base_details['code'], settlement=base_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_destination_section')}\n"
+            f"{get_message('setstations_station_summary', title=dest_details['title'], code=dest_details['code'], settlement=dest_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_success_message')}"
         )
+        await query.edit_message_text(success_text)
     except Exception as e:
         logger.error("User %s failed to save user stations: %s", user_id, e)
-        await query.edit_message_text("Failed to save stations. Please try again.")
+        await query.edit_message_text(get_message("setstations_save_error"))
 
     return ConversationHandler.END
 
@@ -422,9 +465,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = user.username if user and user.username else (user.id if user else "unknown")
     logger.info("User %s cancelled set stations conversation", user_id)
     if update.message is not None:
-        await update.message.reply_text("Operation cancelled. Type /cancel to exit.")
+        await update.message.reply_text(get_message("setstations_cancelled"))
     elif update.callback_query is not None:
-        await update.callback_query.edit_message_text("Operation cancelled. Type /cancel to exit.")
+        await update.callback_query.edit_message_text(get_message("setstations_cancelled"))
     else:
         # Fallback if neither message nor callback_query is available
         pass
