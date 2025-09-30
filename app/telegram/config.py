@@ -9,7 +9,7 @@ from config.settings import get_config
 
 class TelegramSettings(BaseModel):
     token: Optional[str]
-    parse_mode: str = "Markdown"
+    parse_mode: str = "MarkdownV2"
     enabled: bool = True
 
     @classmethod
