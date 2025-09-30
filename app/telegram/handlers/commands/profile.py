@@ -13,10 +13,9 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     i18n = get_i18n_manager()
     
-    # Detect user language from Telegram locale
-    user_language = None
-    if user and hasattr(user, 'language_code') and user.language_code:
-        user_language = i18n.detect_language_from_locale(user.language_code)
+    # Get user language from DB, cache, or Telegram locale
+    telegram_locale = user.language_code if user and hasattr(user, 'language_code') else None
+    user_language = await i18n.get_user_language_preference(telegram_id, telegram_locale)
     
     db_user = await UserService.get_user(telegram_id)
     if not db_user:

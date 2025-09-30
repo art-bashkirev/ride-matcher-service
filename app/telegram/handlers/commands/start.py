@@ -21,19 +21,14 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     i18n = get_i18n_manager()
     
-    # Check database for user language preference
+    # Get user language from DB, cache, or Telegram locale
     user_language = None
     if telegram_id:
-        db_lang = await i18n.get_user_language_from_db(telegram_id)
-        if db_lang:
-            user_language = db_lang
-            i18n.set_user_language(telegram_id, db_lang)
-    
-    # Fallback to Telegram locale
-    if not user_language and user and hasattr(user, 'language_code') and user.language_code:
-        user_language = i18n.detect_language_from_locale(user.language_code)
-        # Save detected language to database
-        if telegram_id:
+        telegram_locale = user.language_code if user and hasattr(user, 'language_code') else None
+        user_language = await i18n.get_user_language_preference(telegram_id, telegram_locale)
+        
+        # Save language to database if we got it from locale
+        if telegram_locale and user_language:
             try:
                 await UserService.get_or_create_user(telegram_id, user.username, user.first_name, user.last_name)
                 await UserService.update_user_language(telegram_id, user_language.value)

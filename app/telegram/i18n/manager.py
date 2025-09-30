@@ -48,8 +48,45 @@ class I18nManager:
             pass
         return None
     
+    async def get_user_language_preference(self, user_id: int, telegram_locale: Optional[str] = None) -> Language:
+        """Get user's language preference from DB, cache, or locale.
+        
+        This method checks in order:
+        1. In-memory cache
+        2. Database
+        3. Telegram locale (if provided)
+        4. Default language
+        
+        Args:
+            user_id: Telegram user ID
+            telegram_locale: Telegram user locale (e.g., 'en', 'ru', 'en-US')
+            
+        Returns:
+            User's language preference
+        """
+        # Check in-memory cache first
+        if user_id in self._user_languages:
+            return self._user_languages[user_id]
+        
+        # Check database
+        db_lang = await self.get_user_language_from_db(user_id)
+        if db_lang:
+            # Cache it for future use
+            self._user_languages[user_id] = db_lang
+            return db_lang
+        
+        # Try Telegram locale
+        if telegram_locale:
+            locale_lang = self.detect_language_from_locale(telegram_locale)
+            # Cache it
+            self._user_languages[user_id] = locale_lang
+            return locale_lang
+        
+        # Return default
+        return self.default_language
+    
     def get_user_language(self, user_id: int) -> Language:
-        """Get language preference for a user.
+        """Get language preference for a user from in-memory cache.
         
         Args:
             user_id: Telegram user ID
