@@ -17,7 +17,6 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user = update.effective_user
     telegram_id = getattr(user, "id", None) if user else None
-    mention = user.mention_html() if user else "there"
     
     # Create or update user
     if telegram_id:
@@ -31,6 +30,18 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if user has stations configured
     db_user = await UserService.get_user(telegram_id) if telegram_id else None
     has_stations = db_user and db_user.base_station_code and db_user.destination_code
+    
+    # Use name from database if available, otherwise fall back to Telegram user
+    if db_user and db_user.first_name:
+        # Build mention from database name
+        full_name = db_user.first_name
+        if db_user.last_name:
+            full_name += f" {db_user.last_name}"
+        mention = f'<a href="tg://user?id={telegram_id}">{full_name}</a>'
+    elif user:
+        mention = user.mention_html()
+    else:
+        mention = "there"
     
     # Build welcome message
     welcome = get_message("start_welcome")
