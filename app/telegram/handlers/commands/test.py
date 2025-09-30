@@ -13,4 +13,10 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
     logger.info("User %s requested test", update.effective_user.username if update.effective_user else "unknown")
-    await update.message.reply_text("They need us for who we are. So be yourself. Only better.")
+    await update.message.reply_text(
+        "🎭 **Test Command**\n"
+        "══════════════════\n\n"
+        "✨ *\"They need us for who we are.*\n"
+        "*So be yourself. Only better.\"*\n\n"
+        "🚀 Bot is working perfectly!"
+    )
