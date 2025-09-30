@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 from pymongo.database import Database as AsyncDatabase
 
 from config.log_setup import get_logger
@@ -53,18 +53,18 @@ class ThreadMatchingService:
 
     def __init__(self):
         self.config = get_config()
-        self._client: Optional[AsyncIOMotorClient] = None
+        self._client: Optional[AsyncMongoClient] = None
         self._db: Optional[AsyncDatabase] = None
         # Default TTL: 2.5 hours (150 minutes) as per requirement
         self.default_ttl_minutes = 150
 
-    async def _get_client(self) -> AsyncIOMotorClient:
+    async def _get_client(self) -> AsyncMongoClient:
         """Get MongoDB client."""
         if self._client is None:
             if not all([self.config.mongodb_host, self.config.mongodb_user, self.config.mongodb_password]):
                 raise ValueError("MongoDB configuration incomplete")
             uri = f"mongodb+srv://{self.config.mongodb_user}:{self.config.mongodb_password}@{self.config.mongodb_host}/?retryWrites=true&w=majority"
-            self._client = AsyncIOMotorClient(uri)
+            self._client = AsyncMongoClient(uri)
             logger.info("MongoDB client created for thread matching service")
         return self._client
 

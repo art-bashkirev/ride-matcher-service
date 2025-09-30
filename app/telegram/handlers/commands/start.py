@@ -52,11 +52,16 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # User has stations - show menu keyboard
         keyboard_base = get_message("keyboard_schedule_base")
         keyboard_dest = get_message("keyboard_schedule_dest")
+        keyboard_goto = get_message("keyboard_goto")
+        keyboard_goback = get_message("keyboard_goback")
+        keyboard_cancelride = get_message("keyboard_cancelride")
         keyboard_help = get_message("keyboard_help")
         keyboard_profile = get_message("keyboard_profile")
         
         keyboard = [
             [KeyboardButton(keyboard_base), KeyboardButton(keyboard_dest)],
+            [KeyboardButton(keyboard_goto), KeyboardButton(keyboard_goback)],
+            [KeyboardButton(keyboard_cancelride)],
             [KeyboardButton(keyboard_help), KeyboardButton(keyboard_profile)],
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)

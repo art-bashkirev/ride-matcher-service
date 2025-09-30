@@ -165,6 +165,9 @@ MESSAGES = {
     # Keyboard buttons
     "keyboard_schedule_base": f"{EMOJIS['home']} Моё расписание",
     "keyboard_schedule_dest": f"{EMOJIS['target']} Расписание до пункта назначения",
+    "keyboard_goto": "🚂 Найти попутчиков (туда)",
+    "keyboard_goback": "🔙 Найти попутчиков (обратно)",
+    "keyboard_cancelride": "❌ Отменить поиск",
     "keyboard_help": f"{EMOJIS['help']} Помощь",
     "keyboard_profile": f"{EMOJIS['user']} Профиль",
     

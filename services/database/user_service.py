@@ -45,7 +45,7 @@ class UserService:
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
     ) -> User:
-        """Get or create a user. Updates first_name and last_name if they've changed."""
+        """Get or create a user."""
         user, created = await User.get_or_create(
             telegram_id=telegram_id,
             defaults={
@@ -54,24 +54,6 @@ class UserService:
                 "last_name": last_name,
             }
         )
-        
-        # Update first_name and last_name if they've changed
-        if not created:
-            updated = False
-            if username is not None and user.username != username:
-                user.username = username
-                updated = True
-            if first_name is not None and user.first_name != first_name:
-                user.first_name = first_name
-                updated = True
-            if last_name is not None and user.last_name != last_name:
-                user.last_name = last_name
-                updated = True
-            
-            if updated:
-                await user.save()
-                logger.info("Updated user %s profile information", telegram_id)
-        
         return user
 
     @staticmethod
