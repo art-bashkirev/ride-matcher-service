@@ -1,7 +1,7 @@
 """Configuration module using Pydantic BaseSettings (pydantic v2)."""
 
 import pytz
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,10 @@ class Config(BaseSettings):
     telegram_default_language: str = Field(default="en")  # Default language for the bot
 
     # Redis configuration for caching
+    redis_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("redis_url", "REDIS_URL", "redis_uri", "REDIS_URI"),
+    )
     redis_host: str = Field(default="localhost")
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
@@ -40,17 +44,58 @@ class Config(BaseSettings):
     redis_password: str | None = Field(default=None)
 
     # Database URIs
-    postgresql_uri: str | None = Field(default=None)
+    postgres_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "postgres_url",
+            "POSTGRES_URL",
+            "postgresql_url",
+            "POSTGRESQL_URL",
+            "postgresql_uri",
+            "POSTGRESQL_URI",
+            "DATABASE_URL",
+            "POSTGRES_URI",
+        ),
+    )
     mongodb_host: str | None = Field(default=None)
     mongodb_user: str | None = Field(default=None)
     mongodb_password: str | None = Field(default=None)
 
-    @field_validator('postgresql_uri')
+    @field_validator('postgres_url')
     def fix_postgres_scheme(cls, v):
         """Fix PostgreSQL URI scheme for Tortoise ORM."""
         if v and v.startswith('postgresql://'):
             return v.replace('postgresql://', 'postgres://', 1)
         return v
+
+    @property
+    def redis_connection_kwargs(self) -> dict:
+        """Build connection parameters for Redis."""
+        if self.redis_url:
+            return {
+                "url": self.redis_url,
+                "kwargs": {
+                    "decode_responses": True,
+                    "socket_timeout": 10,
+                    "socket_connect_timeout": 10,
+                    "health_check_interval": 30,
+                },
+            }
+
+        return {
+            "url": None,
+            "kwargs": {
+                "host": self.redis_host,
+                "port": self.redis_port,
+                "db": self.redis_db,
+                "username": self.redis_username,
+                "password": self.redis_password,
+                "decode_responses": True,
+                "socket_timeout": 10,
+                "socket_connect_timeout": 10,
+                "health_check_interval": 30,
+            },
+        }
 
     # Cache configuration
     cache_ttl_search: int = Field(default=3600)  # 1 hour for search results

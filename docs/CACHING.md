@@ -34,6 +34,10 @@ Add these environment variables (or update `.env`):
 
 ```bash
 # Redis Configuration
+# Preferred: single URL provided by your hosting (takes precedence when set)
+# REDIS_URL=redis://default:password@redis-host:6379/0
+
+# Fallback host/port settings (used only if REDIS_URL is not set)
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
@@ -75,7 +79,7 @@ async with CachedYandexSchedules() as client:
 
 The `/schedule` command automatically uses caching:
 
-```
+```text
 /schedule s9600213
 ```
 
@@ -214,9 +218,11 @@ maxmemory-policy allkeys-lru
 ### Common Issues
 
 1. **Redis Connection Failed**
-   ```
-   ERROR: Failed to connect to Redis: Error 111 connecting to localhost:6379
-   ```
+
+    ```text
+    ERROR: Failed to connect to Redis: Error 111 connecting to localhost:6379
+    ```
+
     - Check if Redis server is running
     - Verify Redis host/port configuration
 
@@ -264,3 +270,4 @@ python /tmp/test_integration.py
 ```
 
 Tests work even without Redis server (graceful degradation).
+

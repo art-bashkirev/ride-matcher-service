@@ -32,18 +32,19 @@ class BaseRedisClient:
                 if cls._redis is None:
                     try:
                         config = get_config()
-                        cls._redis = AsyncRedis(
-                            host=config.redis_host,
-                            port=config.redis_port,
-                            db=config.redis_db,
-                            username=config.redis_username,
-                            password=config.redis_password,
-                            decode_responses=True,
-                            socket_timeout=10,
-                            socket_connect_timeout=10,
-                            health_check_interval=30,
-                        )
-                        await cls._redis.ping()
+                        redis_options = config.redis_connection_kwargs
+
+                        if redis_options["url"]:
+                            redis_client = AsyncRedis.from_url(
+                                redis_options["url"],
+                                **redis_options["kwargs"],
+                            )
+                        else:
+                            redis_client = AsyncRedis(
+                                **redis_options["kwargs"],
+                            )
+                        await redis_client.ping()
+                        cls._redis = redis_client
                         logger.info("Redis connection established successfully")
                     except RedisError as e:
                         logger.error("Failed to connect to Redis: %s", e)

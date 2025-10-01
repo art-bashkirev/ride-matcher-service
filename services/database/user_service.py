@@ -18,11 +18,11 @@ class UserService:
     async def init_db():
         """Initialize Tortoise ORM."""
         config = get_config()
-        if not config.postgresql_uri:
-            raise ValueError("PostgreSQL URI not configured")
+        if not config.postgres_url:
+            raise ValueError("PostgreSQL URL not configured")
 
         await Tortoise.init(
-            db_url=config.postgresql_uri,
+            db_url=config.postgres_url,
             modules={"models": ["models.user", "models.feature_flag"]}
         )
         # Try to generate schemas, but don't fail if they already exist

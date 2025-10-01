@@ -97,12 +97,15 @@ This project uses Pydantic BaseSettings for configuration management.
 
 ### Environment Variables
 
-- `YANDEX_SCHEDULES_API_KEY` (required): Your Yandex Schedules API key
-- `RESULT_TIMEZONE` (optional): Timezone for results (default: "Europe/Moscow")
-- `ENVIRONMENT` (optional): Environment name (default: "development")
-- `LOG_LEVEL` (optional): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) default: INFO
-- `HTTP_HOST` / `HTTP_PORT` (optional): Host/port for health & future HTTP endpoints (defaults: 0.0.0.0:8000)
-- `TELEGRAM_BOT_TOKEN` (optional): If provided, the Telegram bot will start; omitted disables bot
+* `YANDEX_SCHEDULES_API_KEY` (required): Your Yandex Schedules API key
+* `RESULT_TIMEZONE` (optional): Timezone for results (default: "Europe/Moscow")
+* `ENVIRONMENT` (optional): Environment name (default: "development")
+* `LOG_LEVEL` (optional): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) default: INFO
+* `HTTP_HOST` / `HTTP_PORT` (optional): Host/port for health & future HTTP endpoints (defaults: 0.0.0.0:8000)
+* `TELEGRAM_BOT_TOKEN` (optional): If provided, the Telegram bot will start; omitted disables bot
+* `POSTGRES_URL` / `DATABASE_URL` (required for persistence): PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/dbname`). If it starts with `postgresql://`, the service automatically normalizes it to `postgres://` for Tortoise ORM compatibility. Legacy `POSTGRESQL_URI` is still accepted for backward compatibility.
+* `REDIS_URL` (optional but preferred): Full Redis connection URL (e.g. `redis://default:password@host:6379/0`). When set, it takes precedence over the host/port fields below. Legacy `REDIS_URI` remains supported.
+* `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_USERNAME`, `REDIS_PASSWORD` (optional): Fallback Redis parameters used only when `REDIS_URL` is not provided.
 
 ### Running (HTTP health + Telegram bot)
 
