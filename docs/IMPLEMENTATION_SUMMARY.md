@@ -15,7 +15,7 @@ This implementation adds a complete ride matching system to the ride-matcher-ser
 - **ThreadMatch**: Model for matched users
 
 Key features:
-- MongoDB TTL index for automatic cleanup after 2.5 hours
+- MongoDB TTL index for automatic cleanup after 1 hour
 - Indexes on `telegram_id` and `candidate_threads.thread_uid` for fast queries
 - O(n) matching algorithm
 - Full error handling and logging
@@ -24,7 +24,7 @@ Key features:
 
 **File**: `app/telegram/handlers/commands/goto.py`
 - `/goto` command: Search from base station to destination
-- Finds trains within next 2.5 hours
+- Finds trains within next 1 hour
 - Stores results in MongoDB
 - Shows matches to user
 
@@ -80,16 +80,16 @@ Added:
 
 ## Key Features Implemented
 
-### 1. Time Window Filtering (2.5 hours)
+### 1. Time Window Filtering (1 hour)
 ```python
 now = datetime.now(config.timezone)
-end_time = now + timedelta(hours=2.5)
+end_time = now + timedelta(hours=1)
 # Filter trains: now <= departure_dt <= end_time
 ```
 
-### 2. MongoDB TTL (150 minutes)
+### 2. MongoDB TTL (60 minutes)
 ```python
-ttl = 150  # minutes (2.5 hours)
+ttl = 60  # minutes (1 hour)
 expires_at = now + timedelta(minutes=ttl)
 # MongoDB automatically deletes expired documents
 ```
@@ -133,7 +133,7 @@ search_response, was_cached = await cached_client.get_search_results(search_req)
    /goback    # Destination → Base
    ```
    - Bot searches Yandex API (cached)
-   - Filters trains in next 2.5 hours
+   - Filters trains in next 1 hour
    - Stores results in MongoDB
    - Finds and displays matches
 
@@ -144,7 +144,7 @@ search_response, was_cached = await cached_client.get_search_results(search_req)
    Removes user from matching pool
 
 4. **Automatic Cleanup**:
-   MongoDB TTL expires records after 2.5 hours
+   MongoDB TTL expires records after 1 hour
 
 ## Technical Details
 
@@ -223,8 +223,8 @@ print('✓ All imports successful')
 ✅ Fetch AND cache search results → Uses `CachedYandexSchedules`  
 ✅ Matching algorithm → O(n) implementation in `find_matches()`  
 ✅ Store thread IDs → `CandidateThread` model with `thread_uid`  
-✅ 2.5 hour window → `timedelta(hours=2.5)` filtering  
-✅ MongoDB with TTL → 150 minutes TTL index  
+✅ 1 hour window → `timedelta(hours=1)` filtering  
+✅ MongoDB with TTL → 60 minutes TTL index  
 ✅ Search both directions → `goto` and `goback`  
 ✅ Match users on same thread → Query by `thread_uid`  
 ✅ Let users know → Match display in responses  

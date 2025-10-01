@@ -28,7 +28,7 @@
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                     FILTER TRAINS IN TIME WINDOW                            │
 │  • now = current time                                                       │
-│  • end_time = now + 2.5 hours (150 minutes)                                │
+│  • end_time = now + 1 hour (60 minutes)                                │
 │  • Filter: now ≤ departure_time ≤ end_time                                 │
 │  • Build list of CandidateThread objects                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -42,7 +42,7 @@
 │    - username, first_name, last_name                                        │
 │    - from/to station codes and titles                                       │
 │    - candidate_threads[] (each with thread_uid, times, stations)           │
-│    - created_at, expires_at (TTL: 150 minutes)                             │
+│    - created_at, expires_at (TTL: 60 minutes)                             │
 │  • Upsert: replaces existing search for this user                          │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
@@ -156,8 +156,8 @@ MongoDB: user_search_results collection
 
 ## Key Points
 
-1. **Time Window**: Searches only include trains departing in the next 2.5 hours
-2. **TTL**: Search results automatically expire after 2.5 hours (150 minutes)
+1. **Time Window**: Searches only include trains departing in the next 1 hour
+2. **TTL**: Search results automatically expire after 1 hour (60 minutes)
 3. **Matching**: Users are matched when they have the same thread_uid in their candidate_threads
 4. **Cross-Route**: Works even if users have different base/destination stations
 5. **Bidirectional**: /goto and /goback create separate searches (different directions)

@@ -86,7 +86,7 @@ print("   💡 Alice will no longer see Bob in her matches")
 print()
 
 # TTL expiration
-print("⏰ 2.5 hours later...")
+print("⏰ 1 hour later...")
 print("   🗑️  MongoDB TTL expires Alice's search results")
 print("   🗑️  MongoDB TTL expires Charlie's search results")
 print("   🗑️  MongoDB TTL expires Diana's search results")
@@ -100,7 +100,7 @@ print("""
 
 1. Store Phase:
    - User searches → stores candidate threads in MongoDB
-   - Each document has TTL of 150 minutes (2.5 hours)
+   - Each document has TTL of 60 minutes (1 hour)
 
 2. Match Phase:
    - Query: Find all users with overlapping thread UIDs
@@ -116,7 +116,7 @@ print("""
                          KEY FEATURES
 ═══════════════════════════════════════════════════════════════
 
-✅ Automatic TTL expiration (2.5 hours)
+✅ Automatic TTL expiration (1 hour)
 ✅ Cross-user matching on shared thread UIDs
 ✅ Works with different base/destination stations
 ✅ Supports both directions (goto/goback)

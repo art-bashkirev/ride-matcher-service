@@ -7,10 +7,10 @@ The ride matching system allows users to find potential travel companions ("по
 ## Commands
 
 ### `/goto` - Search from Base to Destination
-Searches for trains from the user's base station to destination station within the next 2.5 hours and finds other users who might take the same train.
+Searches for trains from the user's base station to destination station within the next 1 hour and finds other users who might take the same train.
 
 ### `/goback` - Search from Destination to Base
-Searches for trains from the user's destination station back to base station (reverse direction) within the next 2.5 hours.
+Searches for trains from the user's destination station back to base station (reverse direction) within the next 1 hour.
 
 ### `/cancelride` - Cancel Active Search
 Cancels the user's active ride matching search and removes their candidate threads from the matching pool.
@@ -23,13 +23,13 @@ When a user runs `/goto` or `/goback`:
 
 1. **Validate User Setup**: Check that the user has configured their base and destination stations via `/setstations`
 2. **Show Loading Message**: Display "⏳ Ищу поезда и попутчиков..."
-3. **Calculate Time Window**: Set the search window to the next 2.5 hours from now
+3. **Calculate Time Window**: Set the search window to the next 1 hour from now
 
 ### 2. Fetch Train Schedules
 
 1. **Create Search Request**: Build a search request for the route (base → destination or vice versa)
 2. **Query Yandex API**: Use the cached client to get search results (hits cache if available)
-3. **Filter Trains**: Filter trains to only those departing within the 2.5-hour window
+3. **Filter Trains**: Filter trains to only those departing within the 1-hour window
 
 ### 3. Store Candidate Threads
 
@@ -41,7 +41,7 @@ For each train found:
    - User's telegram_id, username, first_name, last_name
    - From/To station codes and titles
    - List of candidate threads
-   - TTL of 150 minutes (2.5 hours) for automatic expiration
+   - TTL of 60 minutes (1 hour) for automatic expiration
 
 ### 4. Find Matches and Notify Existing Users
 
@@ -97,7 +97,7 @@ Show the user:
 
 - `telegram_id` - For quick user lookups
 - `candidate_threads.thread_uid` - For finding matches across users
-- `expires_at` (TTL) - Automatic document expiration after 2.5 hours
+- `expires_at` (TTL) - Automatic document expiration after 1 hour
 
 ## Matching Algorithm
 
@@ -132,7 +132,7 @@ All operations are logged comprehensively:
 
 ## Automatic Cleanup
 
-MongoDB's TTL index automatically removes expired search results after 2.5 hours, ensuring:
+MongoDB's TTL index automatically removes expired search results after 1 hour, ensuring:
 - No stale data accumulates
 - Storage is automatically managed
 - Users see only current matches

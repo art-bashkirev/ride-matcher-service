@@ -51,7 +51,7 @@ User: /goto
 Bot: ⏳ Ищу поезда и попутчиков...
 
 Bot: ✅ Поиск завершен!
-     Найдено 8 поездов в ближайшие 2.5 часа.
+     Найдено 8 поездов в ближайший час.
      
      Пока попутчиков не найдено. Мы уведомим вас, когда кто-то найдется!
 ```
@@ -64,7 +64,7 @@ User: /goto
 Bot: ⏳ Ищу поезда и попутчиков...
 
 Bot: ✅ Поиск завершен!
-     Найдено 8 поездов в ближайшие 2.5 часа.
+     Найдено 8 поездов в ближайший час.
      
      🎉 Найдены попутчики!
      
@@ -84,7 +84,7 @@ User: /goback
 Bot: ⏳ Ищу поезда и попутчиков...
 
 Bot: ✅ Поиск завершен!
-     Найдено 6 поездов в ближайшие 2.5 часа.
+     Найдено 6 поездов в ближайший час.
      
      🎉 Найдены попутчики!
      
@@ -183,7 +183,7 @@ Bot: Found 10 trains, matches with Charlie on train at 08:45
 **8:00 AM - Alice searches**
 ```
 Alice: /goto
-Bot: Stored search with TTL: 2.5 hours
+Bot: Stored search with TTL: 1 hour
 ```
 
 **10:30 AM - TTL expires**
@@ -212,7 +212,7 @@ Bot: ⚠️ Сначала установите станции с помощью
 ```
 User: /goto
 Bot: ⏳ Ищу поезда и попутчиков...
-Bot: ❌ Поездов не найдено в ближайшие 2.5 часа.
+Bot: ❌ Поездов не найдено в ближайший час.
 ```
 
 ### Case 3: API Error
@@ -228,17 +228,17 @@ Bot: ❌ Не удалось выполнить поиск. Попробуйте
 
 ### /goto
 **Purpose**: Search for trains from your base station to destination  
-**Time Window**: Next 2.5 hours from now  
+**Time Window**: Next 1 hour from now  
 **Caching**: Uses cached schedule data when available  
 **Matching**: Finds other users with same train threads  
-**Storage**: Saves results for 2.5 hours with TTL  
+**Storage**: Saves results for 1 hour with TTL  
 
 ### /goback
 **Purpose**: Search for trains from your destination back to base (reverse)  
-**Time Window**: Next 2.5 hours from now  
+**Time Window**: Next 1 hour from now  
 **Caching**: Uses cached schedule data when available  
 **Matching**: Finds other users with same train threads  
-**Storage**: Saves results for 2.5 hours with TTL  
+**Storage**: Saves results for 1 hour with TTL  
 
 ### /cancelride
 **Purpose**: Cancel your active ride search  
@@ -258,7 +258,7 @@ Bot: ❌ Не удалось выполнить поиск. Попробуйте
    - Use `/goback` in the evening
 
 3. **Plan Ahead**:
-   - Search window is 2.5 hours
+   - Search window is 1 hour
    - Search when you're ready to commit to a time range
 
 4. **Cancel When Plans Change**:
@@ -280,10 +280,10 @@ A: No other users have searched for trains that overlap with yours in the same t
 A: Yes! The system matches by train thread, not destination. If two users take the same physical train (even to different stops), they'll match.
 
 **Q: How long do matches last?**  
-A: Matches expire after 2.5 hours automatically via MongoDB TTL.
+A: Matches expire after 1 hour automatically via MongoDB TTL.
 
 **Q: Can I search for multiple time windows?**  
-A: Each search replaces your previous search. The system always shows trains for the next 2.5 hours from when you search.
+A: Each search replaces your previous search. The system always shows trains for the next 1 hour from when you search.
 
 **Q: What if I need to change my stations?**  
 A: Currently, station updates are restricted after initial setup. Contact an admin for changes.
