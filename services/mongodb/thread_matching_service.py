@@ -55,8 +55,8 @@ class ThreadMatchingService:
         self.config = get_config()
         self._client: Optional[AsyncMongoClient] = None
         self._db: Optional[AsyncDatabase] = None
-        # Default TTL: 2.5 hours (150 minutes) as per requirement
-        self.default_ttl_minutes = 150
+        # Default TTL: 1 hour (60 minutes) to match the search time window
+        self.default_ttl_minutes = 60
 
     async def _get_client(self) -> AsyncMongoClient:
         """Get MongoDB client."""
@@ -117,7 +117,7 @@ class ThreadMatchingService:
             from_station_title: From station title
             to_station_title: To station title
             candidate_threads: List of candidate threads
-            ttl_minutes: TTL in minutes (default: 150 minutes / 2.5 hours)
+            ttl_minutes: TTL in minutes (default: 60 minutes / 1 hour)
             
         Returns:
             True if successful, False otherwise

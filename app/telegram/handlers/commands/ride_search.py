@@ -58,9 +58,9 @@ async def search_rides(
     try:
         config = get_config()
         
-        # Calculate time window: now + 2.5 hours
+        # Calculate time window: now + 1 hour
         now = datetime.now(config.timezone)
-        end_time = now + timedelta(hours=2.5)
+        end_time = now + timedelta(hours=1)
         
         # Determine from/to based on direction
         if reverse:
@@ -193,8 +193,22 @@ async def search_rides(
         # Build response message
         response_lines = [
             get_message("ride_search_success"),
-            get_message("ride_search_found_trains", count=len(candidate_threads))
+            get_message("ride_search_found_trains", count=len(candidate_threads)),
+            ""
         ]
+        
+        # Show candidate trains immediately
+        if candidate_threads:
+            response_lines.append("🚂 **Доступные поезда:**")
+            for thread in candidate_threads[:10]:  # Show first 10 to avoid overwhelming
+                departure_dt = datetime.fromisoformat(thread.departure_time)
+                departure_str = departure_dt.strftime("%H:%M")
+                arrival_dt = datetime.fromisoformat(thread.arrival_time)
+                arrival_str = arrival_dt.strftime("%H:%M")
+                response_lines.append(f"  • {departure_str} → {arrival_str}")
+            
+            if len(candidate_threads) > 10:
+                response_lines.append(f"  ... и ещё {len(candidate_threads) - 10}")
         
         if matches:
             response_lines.append("")
@@ -216,7 +230,21 @@ async def search_rides(
                     )
                     
                     for matched_user in matched_users:
-                        name = matched_user.get("first_name") or matched_user.get("username") or "Пользователь"
+                        # Build full name with first and last name
+                        first_name = matched_user.get("first_name", "")
+                        last_name = matched_user.get("last_name", "")
+                        username = matched_user.get("username", "")
+                        
+                        # Prefer first + last name, fallback to username, then default
+                        if first_name and last_name:
+                            name = f"{first_name} {last_name}"
+                        elif first_name:
+                            name = first_name
+                        elif username:
+                            name = username
+                        else:
+                            name = "Пользователь"
+                        
                         from_title = matched_user.get("from_station_title", "?")
                         to_title = matched_user.get("to_station_title", "?")
                         

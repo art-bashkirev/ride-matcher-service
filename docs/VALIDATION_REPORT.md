@@ -19,8 +19,8 @@
 | Fetch and cache search results | ✅ | Uses `CachedYandexSchedules` client |
 | Simple matching algorithm | ✅ | O(n) algorithm in `ThreadMatchingService.find_matches()` |
 | Store thread IDs | ✅ | `CandidateThread` model with `thread_uid` field |
-| 2.5 hour time window | ✅ | `timedelta(hours=2.5)` filtering logic |
-| MongoDB storage with TTL | ✅ | Collection with TTL index, 150 minutes expiration |
+| 1 hour time window | ✅ | `timedelta(hours=1)` filtering logic |
+| MongoDB storage with TTL | ✅ | Collection with TTL index, 60 minutes expiration |
 | Search both directions | ✅ | `/goto` (base→dest) and `/goback` (dest→base) |
 | Match users on same thread | ✅ | Query by `candidate_threads.thread_uid` |
 | Notify users of matches | ✅ | Display in command response |
@@ -110,13 +110,13 @@ Collection: user_search_results
 ### Time Window Logic
 ```python
 now = datetime.now(config.timezone)
-end_time = now + timedelta(hours=2.5)
+end_time = now + timedelta(hours=1)
 # Filter: now <= departure_dt <= end_time
 ```
 
 ### TTL Configuration
 ```python
-ttl_minutes = 150  # 2.5 hours
+ttl_minutes = 60  # 1 hour
 expires_at = now + timedelta(minutes=ttl_minutes)
 ```
 
@@ -189,7 +189,7 @@ INFO: User 123456789 (username: john) invoked /goto command
 INFO: Fetching search results for user 123456789: s9600731 -> s9600891
 DEBUG: Search results for user 123456789: cached=True, segments=15
 INFO: User 123456789 has 8 candidate trains in time window
-INFO: Stored search results for user 123456789 with 8 candidate threads (TTL: 150 min)
+INFO: Stored search results for user 123456789 with 8 candidate threads (TTL: 60 min)
 INFO: User 123456789 has 2 matching threads with other users
 ```
 
