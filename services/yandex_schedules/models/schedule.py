@@ -1,6 +1,14 @@
 from pydantic import BaseModel
 
-from .common import ThreadFilter, CodingSystem, Pagination, StationType, SearchCodes, TransportType, ShowSystems
+from .common import (
+    ThreadFilter,
+    CodingSystem,
+    Pagination,
+    StationType,
+    SearchCodes,
+    TransportType,
+    ShowSystems,
+)
 from .thread import Thread
 
 

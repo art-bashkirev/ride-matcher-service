@@ -35,9 +35,11 @@ class CachedYandexSchedules:
         """Async context manager exit."""
         await self.close()
 
-    async def get_search_results(self, req: SearchRequest) -> tuple[SearchResponse, bool]:
+    async def get_search_results(
+        self, req: SearchRequest
+    ) -> tuple[SearchResponse, bool]:
         """Get search results with caching.
-        
+
         Returns:
             tuple: (SearchResponse, was_cached: bool)
         """
@@ -45,30 +47,38 @@ class CachedYandexSchedules:
         cached_response = await self.cache.get_search_results(req)
 
         if cached_response:
-            logger.info("Search results served from cache for route %s -> %s",
-                        req.from_, req.to)
+            logger.info(
+                "Search results served from cache for route %s -> %s", req.from_, req.to
+            )
             return cached_response, True
 
         # Cache miss, fetch from API
-        logger.info("Cache miss, fetching search results from API for route %s -> %s",
-                    req.from_, req.to)
+        logger.info(
+            "Cache miss, fetching search results from API for route %s -> %s",
+            req.from_,
+            req.to,
+        )
 
         response = await self.client.get_search_results(req)
 
         # Cache the response
         cache_success = await self.cache.set_search_results(req, response)
         if cache_success:
-            logger.debug("Successfully cached search results for route %s -> %s",
-                         req.from_, req.to)
+            logger.debug(
+                "Successfully cached search results for route %s -> %s",
+                req.from_,
+                req.to,
+            )
         else:
-            logger.warning("Failed to cache search results for route %s -> %s",
-                           req.from_, req.to)
+            logger.warning(
+                "Failed to cache search results for route %s -> %s", req.from_, req.to
+            )
 
         return response, False
 
     async def get_schedule(self, req: ScheduleRequest) -> tuple[ScheduleResponse, bool]:
         """Get schedule results with caching.
-        
+
         Returns:
             tuple: (ScheduleResponse, was_cached: bool)
         """
@@ -76,16 +86,22 @@ class CachedYandexSchedules:
         cached_response = await self.cache.get_schedule_results(req)
 
         if cached_response:
-            logger.info("Schedule results served from cache for station %s", req.station)
+            logger.info(
+                "Schedule results served from cache for station %s", req.station
+            )
             return cached_response, True
 
         # Cache miss, fetch from API
-        logger.info("Cache miss, fetching schedule from API for station %s", req.station)
+        logger.info(
+            "Cache miss, fetching schedule from API for station %s", req.station
+        )
 
         try:
             response = await self.client.get_schedule(req)
         except Exception as e:
-            logger.error("Failed to fetch schedule from API for station %s: %s", req.station, e)
+            logger.error(
+                "Failed to fetch schedule from API for station %s: %s", req.station, e
+            )
             # Re-raise the exception to be handled by the caller
             raise
 
@@ -97,7 +113,9 @@ class CachedYandexSchedules:
             else:
                 logger.warning("Failed to cache schedule for station %s", req.station)
         else:
-            logger.info("Not caching empty schedule response for station %s", req.station)
+            logger.info(
+                "Not caching empty schedule response for station %s", req.station
+            )
 
         return response, False
 

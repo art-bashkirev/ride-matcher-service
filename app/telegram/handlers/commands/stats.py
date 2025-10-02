@@ -29,14 +29,9 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tip = get_message("stats_tip")
 
     message_text = (
-        f"{title}\n"
-        f"{separator}\n\n"
-        f"{intro}\n\n"
-        f"{stats_body}\n\n"
-        f"{tip}"
+        f"{title}\n" f"{separator}\n\n" f"{intro}\n\n" f"{stats_body}\n\n" f"{tip}"
     )
 
     await update.message.reply_html(
-        message_text,
-        reply_markup=ForceReply(selective=True)
+        message_text, reply_markup=ForceReply(selective=True)
     )

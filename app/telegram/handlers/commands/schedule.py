@@ -8,7 +8,7 @@ from app.telegram.utils import (
     format_schedule_reply,
     filter_upcoming_departures,
     paginate_schedule,
-    create_pagination_keyboard
+    create_pagination_keyboard,
 )
 from app.telegram.messages import get_message
 from config.log_setup import get_logger
@@ -38,7 +38,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         format_info = get_message("schedule_cmd_format")
         tip = get_message("schedule_cmd_tip")
         separator = get_message("separator")
-        
+
         await update.message.reply_text(
             f"{help_title}\n"
             f"{separator}\n\n"
@@ -58,7 +58,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         expected_format = get_message("schedule_error_expected_format")
         try_again = get_message("schedule_error_try_again")
         separator = get_message("separator")
-        
+
         await update.message.reply_text(
             f"{error_title}\n"
             f"{separator}\n\n"
@@ -70,9 +70,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Show loading message
-    loading_message = await update.message.reply_text(
-        get_message("loading")
-    )
+    loading_message = await update.message.reply_text(get_message("loading"))
 
     logger.info("Trying to serve schedule to User %s ", username)
 
@@ -80,12 +78,12 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         config = get_config()
 
         # Create schedule request - fetch many trains to cache and filter
-        today = datetime.now(config.timezone).strftime('%Y-%m-%d')
+        today = datetime.now(config.timezone).strftime("%Y-%m-%d")
         schedule_request = ScheduleRequest(
             station=station_id,
             date=today,
             result_timezone=config.result_timezone,
-            limit=500  # Fetch many trains to cache properly and filter current ones
+            limit=500,  # Fetch many trains to cache properly and filter current ones
         )
 
         # Use cached client to fetch schedule
@@ -93,14 +91,20 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
             schedule_response, was_cached = await client.get_schedule(schedule_request)
 
             # Set data source based on actual cache hit
-            data_source = get_message("schedule_data_source_cache") if was_cached else get_message("schedule_data_source_api")
+            data_source = (
+                get_message("schedule_data_source_cache")
+                if was_cached
+                else get_message("schedule_data_source_api")
+            )
 
         # Filter to show only upcoming departures from the large cached set
         schedule_items = schedule_response.schedule or []
         filtered_schedule = filter_upcoming_departures(schedule_items)
 
         # Paginate the results (page 1 by default)
-        paginated_items, current_page, total_pages = paginate_schedule(filtered_schedule, page=1)
+        paginated_items, current_page, total_pages = paginate_schedule(
+            filtered_schedule, page=1
+        )
 
         if not paginated_items:
             error_message = format_schedule_reply(station_id, today, [], 1, 1)
@@ -108,7 +112,9 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         # Format the response
-        reply_text = format_schedule_reply(station_id, today, paginated_items, current_page, total_pages)
+        reply_text = format_schedule_reply(
+            station_id, today, paginated_items, current_page, total_pages
+        )
 
         # Add data source information for transparency
         final_text = f"{reply_text}\n\n{data_source}"
@@ -117,15 +123,16 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if schedule_response.station and schedule_response.station.title:
             station_type_suffix = ""
             if schedule_response.station.station_type_name:
-                station_type_suffix = f" ({schedule_response.station.station_type_name})"
+                station_type_suffix = (
+                    f" ({schedule_response.station.station_type_name})"
+                )
             station_info = get_message(
                 "schedule_station_info",
                 title=schedule_response.station.title,
                 station_type=station_type_suffix,
             )
             final_text = final_text.replace(
-                f"station {station_id}",
-                f"station {station_id}{station_info}"
+                f"station {station_id}", f"station {station_id}{station_info}"
             )
 
         # Create pagination keyboard
@@ -134,8 +141,11 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Edit the loading message with the result
         await loading_message.edit_text(final_text, reply_markup=keyboard)
 
-        logger.info("Successfully served schedule for station %s to user %s",
-                    station_id, username)
+        logger.info(
+            "Successfully served schedule for station %s to user %s",
+            station_id,
+            username,
+        )
 
     except Exception as e:
         logger.error("Error fetching schedule for station %s: %s", station_id, str(e))

@@ -12,6 +12,7 @@ from config.settings import get_config
 
 class StationDocument(BaseModel):
     """Station document for MongoDB."""
+
     code: str  # Primary code from codes.yandex_code or similar
     title: str
     station_type: Optional[str]
@@ -36,7 +37,13 @@ class StationsService:
     async def _get_client(self) -> AsyncMongoClient:
         """Get MongoDB client."""
         if self._client is None:
-            if not all([self.config.mongodb_host, self.config.mongodb_user, self.config.mongodb_password]):
+            if not all(
+                [
+                    self.config.mongodb_host,
+                    self.config.mongodb_user,
+                    self.config.mongodb_password,
+                ]
+            ):
                 raise ValueError("MongoDB configuration incomplete")
             uri = f"mongodb+srv://{self.config.mongodb_user}:{self.config.mongodb_password}@{self.config.mongodb_host}/?retryWrites=true&w=majority"
             self._client = AsyncMongoClient(uri)
@@ -54,10 +61,12 @@ class StationsService:
         db = await self._get_db()
         return db["stations"]
 
-    async def search_stations(self, query: str, limit: int = 10) -> List[StationDocument]:
+    async def search_stations(
+        self, query: str, limit: int = 10
+    ) -> List[StationDocument]:
         """Search stations by title or code."""
         collection = await self.get_stations_collection()
-        
+
         # Use aggregation pipeline to score and sort results
         # Normalize query for exact title match (case-insensitive, trimmed)
         norm_query = query.strip().lower()
@@ -82,7 +91,12 @@ class StationsService:
                 "$addFields": {
                     "score": {
                         "$cond": {
-                            "if": {"$eq": [{"$toLower": {"$trim": {"input": "$title"}}}, norm_query]},
+                            "if": {
+                                "$eq": [
+                                    {"$toLower": {"$trim": {"input": "$title"}}},
+                                    norm_query,
+                                ]
+                            },
                             "then": 5,  # Exact title match (case-insensitive, trimmed)
                             "else": {
                                 "$cond": {
@@ -90,23 +104,25 @@ class StationsService:
                                     "then": 4,  # Exact code match
                                     "else": {
                                         "$cond": {
-                                            "if": {"$regexMatch": {"input": "$title", "regex": query, "options": "i"}},
+                                            "if": {
+                                                "$regexMatch": {
+                                                    "input": "$title",
+                                                    "regex": query,
+                                                    "options": "i",
+                                                }
+                                            },
                                             "then": 2,  # Partial title match
-                                            "else": 1   # Other
+                                            "else": 1,  # Other
                                         }
-                                    }
+                                    },
                                 }
-                            }
+                            },
                         }
                     }
                 }
             },
-            {
-                "$sort": {"score": -1, "title": 1}
-            },
-            {
-                "$limit": limit
-            }
+            {"$sort": {"score": -1, "title": 1}},
+            {"$limit": limit},
         ]
         cursor = await collection.aggregate(pipeline)
         results = await cursor.to_list(length=limit)
@@ -134,7 +150,9 @@ class StationsService:
                 for settlement in region.settlements:
                     for station in settlement.stations:
                         # Use yandex_code as primary code, fallback to esr_code
-                        primary_code = station.codes.yandex_code or station.codes.esr_code
+                        primary_code = (
+                            station.codes.yandex_code or station.codes.esr_code
+                        )
                         if not primary_code:
                             continue  # Skip stations without codes
 
@@ -147,11 +165,19 @@ class StationsService:
                         doc = StationDocument(
                             code=primary_code,
                             title=station.title,
-                            station_type=station.station_type.value if station.station_type else None,
+                            station_type=(
+                                station.station_type.value
+                                if station.station_type
+                                else None
+                            ),
                             transport_type=station.transport_type.value,
                             direction=station.direction,
-                            longitude=float(station.longitude) if station.longitude else None,
-                            latitude=float(station.latitude) if station.latitude else None,
+                            longitude=(
+                                float(station.longitude) if station.longitude else None
+                            ),
+                            latitude=(
+                                float(station.latitude) if station.latitude else None
+                            ),
                             settlement_title=settlement.title,
                             region_title=region.title,
                             country_title=country.title,

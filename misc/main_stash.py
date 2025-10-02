@@ -22,13 +22,15 @@ RESULT_TIMEZONE = pytz.timezone(RESULT_TIMEZONE_STR)
 
 # Use today's date in the correct format for the API
 # In production, this would be the date you are fetching the schedule for (e.g., tomorrow)
-PROD_LIKE_DATE = datetime.now(RESULT_TIMEZONE).strftime('%Y-%m-%d')
+PROD_LIKE_DATE = datetime.now(RESULT_TIMEZONE).strftime("%Y-%m-%d")
 
 
 # --- Data Structures for Our Application ---
 
+
 class UserIntent(NamedTuple):
     """Represents a user actively looking for a ride."""
+
     user_id: str
     from_station_code: str
     to_station_code: str
@@ -46,36 +48,35 @@ MOCK_USER_INTENTS = [
         from_station_code="s9600731",  # Podolsk
         to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(8, 30),
-        arrive_by_end=time(9, 0)
+        arrive_by_end=time(9, 0),
     ),
     UserIntent(
         user_id="Bob (Silikatnaya, arr. by 8:30 - 9:00)",
         from_station_code="s9602273",  # Silikatnaya
         to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(8, 30),
-        arrive_by_end=time(9, 0)
-
+        arrive_by_end=time(9, 0),
     ),
     UserIntent(
         user_id="Charlie (Podolsk, arr. by 9:15 - 10:00)",
         from_station_code="s9600731",  # Podolsk
         to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(9, 15),
-        arrive_by_end=time(10, 0)
+        arrive_by_end=time(10, 0),
     ),
     UserIntent(
         user_id="Dan (Shcherbinka, arr. by 8:45-9:15)",
         from_station_code="s9600951",  # Shcherbinka
         to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(8, 45),
-        arrive_by_end=time(9, 15)
+        arrive_by_end=time(9, 15),
     ),
     UserIntent(
         user_id="Eve (Podolsk, 9:15 - 10:00)",
         from_station_code="s9600731",  # Podolsk
         to_station_code="s9600891",  # Tsaritsyno
         arrive_by_start=time(9, 15),
-        arrive_by_end=time(10, 0)
+        arrive_by_end=time(10, 0),
     ),
 ]
 
@@ -87,13 +88,18 @@ MOCK_USER_INTENTS = [
 
 # --- Core Logic Implementation ---
 
-async def fetch_and_cache_schedules(client: YandexSchedules, intents: List[UserIntent]) -> Dict[str, SearchResponse]:
+
+async def fetch_and_cache_schedules(
+    client: YandexSchedules, intents: List[UserIntent]
+) -> Dict[str, SearchResponse]:
     """
     Simulates the overnight job. Fetches schedules for all unique routes required by active users.
     """
     print("--- 1. Starting Proactive Cache Fetch ---")
     cached_schedules = {}
-    unique_routes = {(intent.from_station_code, intent.to_station_code) for intent in intents}
+    unique_routes = {
+        (intent.from_station_code, intent.to_station_code) for intent in intents
+    }
 
     for from_code, to_code in unique_routes:
         route_key = f"{from_code}_{to_code}"
@@ -103,7 +109,7 @@ async def fetch_and_cache_schedules(client: YandexSchedules, intents: List[UserI
             to=to_code,
             date=PROD_LIKE_DATE,
             result_timezone=RESULT_TIMEZONE_STR,
-            limit=300  # Get all trains for the day
+            limit=300,  # Get all trains for the day
         )
         search_result, was_cached = await client.get_search_results(request)
         cached_schedules[route_key] = search_result
@@ -112,7 +118,9 @@ async def fetch_and_cache_schedules(client: YandexSchedules, intents: List[UserI
     return cached_schedules
 
 
-def find_candidate_trains(intent: UserIntent, cached_schedules: Dict[str, SearchResponse]) -> List[SearchSegment]:
+def find_candidate_trains(
+    intent: UserIntent, cached_schedules: Dict[str, SearchResponse]
+) -> List[SearchSegment]:
     """
     Filters the cached schedule to find all trains that match a single user's time window.
     """
@@ -134,7 +142,9 @@ def find_candidate_trains(intent: UserIntent, cached_schedules: Dict[str, Search
     return candidate_trains
 
 
-def find_matches(intents: List[UserIntent], cached_schedules: Dict[str, SearchResponse]) -> Dict[str, List[UserIntent]]:
+def find_matches(
+    intents: List[UserIntent], cached_schedules: Dict[str, SearchResponse]
+) -> Dict[str, List[UserIntent]]:
     """
     The smart O(n) matching algorithm.
     Groups users by the unique ID (thread.uid) of the trains they can potentially take.
@@ -145,7 +155,9 @@ def find_matches(intents: List[UserIntent], cached_schedules: Dict[str, SearchRe
     # O(n) pass: Iterate through each active user once
     for intent in intents:
         candidate_trains = find_candidate_trains(intent, cached_schedules)
-        print(f"User '{intent.user_id}' has {len(candidate_trains)} candidate trains in their time window.")
+        print(
+            f"User '{intent.user_id}' has {len(candidate_trains)} candidate trains in their time window."
+        )
 
         # Populate the dictionary with this user's possible trains
         for train in candidate_trains:
@@ -157,11 +169,15 @@ def find_matches(intents: List[UserIntent], cached_schedules: Dict[str, SearchRe
     print("--- Match analysis complete. ---\n")
 
     # Filter for actual matches (groups of 2 or more)
-    final_matches = {uid: users for uid, users in potential_matches.items() if len(users) >= 2}
+    final_matches = {
+        uid: users for uid, users in potential_matches.items() if len(users) >= 2
+    }
     return final_matches
 
 
-def present_results(matches: Dict[str, List[UserIntent]], cached_schedules: Dict[str, SearchResponse]):
+def present_results(
+    matches: Dict[str, List[UserIntent]], cached_schedules: Dict[str, SearchResponse]
+):
     """
     Formats and prints the final match proposals.
     """
@@ -181,14 +197,25 @@ def present_results(matches: Dict[str, List[UserIntent]], cached_schedules: Dict
             full_schedule = cached_schedules[route_key]
 
             # Find the exact train segment that corresponds to this UID for this user's route
-            matched_segment = next((s for s in full_schedule.segments if s.thread and s.thread.uid == uid), None)
+            matched_segment = next(
+                (s for s in full_schedule.segments if s.thread and s.thread.uid == uid),
+                None,
+            )
 
             if matched_segment:
-                departure_time = datetime.fromisoformat(matched_segment.departure).astimezone(RESULT_TIMEZONE).strftime(
-                    '%H:%M')
-                arrival_time = datetime.fromisoformat(matched_segment.arrival).astimezone(RESULT_TIMEZONE).strftime(
-                    '%H:%M')
-                print(f"  - Proposal for {user.user_id}: Depart at {departure_time}, Arrive at {arrival_time}")
+                departure_time = (
+                    datetime.fromisoformat(matched_segment.departure)
+                    .astimezone(RESULT_TIMEZONE)
+                    .strftime("%H:%M")
+                )
+                arrival_time = (
+                    datetime.fromisoformat(matched_segment.arrival)
+                    .astimezone(RESULT_TIMEZONE)
+                    .strftime("%H:%M")
+                )
+                print(
+                    f"  - Proposal for {user.user_id}: Depart at {departure_time}, Arrive at {arrival_time}"
+                )
 
         match_num += 1
 

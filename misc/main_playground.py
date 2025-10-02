@@ -22,7 +22,9 @@ async def main():
     print(f"  - Environment: {config.environment}")
     print(f"  - Timezone: {config.result_timezone}")
     print(f"  - Is Production: {config.is_production}")
-    print(f"  - API Key configured: {'Yes' if config.yandex_schedules_api_key else 'No'}")
+    print(
+        f"  - API Key configured: {'Yes' if config.yandex_schedules_api_key else 'No'}"
+    )
     print()
 
     search_request = SearchRequest(
@@ -38,7 +40,9 @@ async def main():
     # Let's select a random Thread UID from the search results
     async with YandexSchedules(config.yandex_schedules_api_key) as client:
         search_resp = await client.get_search_results(search_request)
-        async with await anyio.open_file("test_search_results.json", "w", encoding="utf-8") as f:
+        async with await anyio.open_file(
+            "test_search_results.json", "w", encoding="utf-8"
+        ) as f:
             await f.write(search_resp.model_dump_json(indent=2))
 
         if not search_resp.segments:
@@ -61,7 +65,9 @@ async def main():
             date=date,
         )
         thread_resp = await client.get_thread(thread_request)
-        async with await anyio.open_file("thread_result.json", "w", encoding="utf-8") as f:
+        async with await anyio.open_file(
+            "thread_result.json", "w", encoding="utf-8"
+        ) as f:
             await f.write(thread_resp.model_dump_json(indent=2))
 
 

@@ -6,14 +6,16 @@ This script simulates the ride matching system without requiring
 a live Telegram bot or database connection.
 """
 
-print("""
+print(
+    """
 ═══════════════════════════════════════════════════════════════
            RIDE MATCHING SYSTEM - FLOW DEMONSTRATION
 ═══════════════════════════════════════════════════════════════
 
 SCENARIO: Three users searching for trains at similar times
 
-""")
+"""
+)
 
 # User 1: Alice searches for trains from Podolsk to Tsaritsyno
 print("👤 User 1: Alice")
@@ -93,7 +95,8 @@ print("   🗑️  MongoDB TTL expires Diana's search results")
 print("   💾 Storage automatically cleaned up")
 print()
 
-print("""
+print(
+    """
 ═══════════════════════════════════════════════════════════════
                        MATCHING ALGORITHM
 ═══════════════════════════════════════════════════════════════
@@ -126,4 +129,5 @@ print("""
 ✅ Telegram ID-based user tracking
 
 ═══════════════════════════════════════════════════════════════
-""")
+"""
+)

@@ -12,7 +12,9 @@ class Config(BaseSettings):
     For example: `TELEGRAM_BOT_TOKEN`, `HTTP_PORT`, `LOG_LEVEL`, etc.
     """
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra='ignore')
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     # API Configuration
     yandex_schedules_api_key: str | None = Field(default=None)
@@ -35,7 +37,9 @@ class Config(BaseSettings):
     # Redis configuration for caching
     redis_url: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("redis_url", "REDIS_URL", "redis_uri", "REDIS_URI"),
+        validation_alias=AliasChoices(
+            "redis_url", "REDIS_URL", "redis_uri", "REDIS_URI"
+        ),
     )
     redis_host: str = Field(default="localhost")
     redis_port: int = Field(default=6379)
@@ -61,11 +65,11 @@ class Config(BaseSettings):
     mongodb_user: str | None = Field(default=None)
     mongodb_password: str | None = Field(default=None)
 
-    @field_validator('postgres_url')
+    @field_validator("postgres_url")
     def fix_postgres_scheme(cls, v):
         """Fix PostgreSQL URI scheme for Tortoise ORM."""
-        if v and v.startswith('postgresql://'):
-            return v.replace('postgresql://', 'postgres://', 1)
+        if v and v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgres://", 1)
         return v
 
     @property
@@ -100,9 +104,11 @@ class Config(BaseSettings):
     # Cache configuration
     cache_ttl_search: int = Field(default=3600)  # 1 hour for search results
     cache_ttl_schedule: int = Field(default=1800)  # 30 minutes for schedule results
-    cache_readable_keys: bool = Field(default=False)  # Use readable keys instead of hashes
+    cache_readable_keys: bool = Field(
+        default=False
+    )  # Use readable keys instead of hashes
 
-    @field_validator('result_timezone')
+    @field_validator("result_timezone")
     def validate_timezone(cls, v):
         """Validate timezone string."""
         try:

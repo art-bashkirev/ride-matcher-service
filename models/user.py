@@ -12,7 +12,9 @@ class User(Model):
     last_name = fields.CharField(max_length=255, null=True)
 
     # Station preferences
-    base_station_code = fields.CharField(max_length=50, null=True)  # Yandex station code
+    base_station_code = fields.CharField(
+        max_length=50, null=True
+    )  # Yandex station code
     base_station_title = fields.CharField(max_length=255, null=True)
     destination_code = fields.CharField(max_length=50, null=True)  # Yandex station code
     destination_title = fields.CharField(max_length=255, null=True)

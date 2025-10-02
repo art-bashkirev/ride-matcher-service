@@ -10,16 +10,18 @@ from .messages import get_message
 
 def is_valid_station_id(text: str) -> bool:
     """Validate message format: s followed by exactly 7 digits."""
-    return bool(re.match(r'^s\d{7}$', text))
+    return bool(re.match(r"^s\d{7}$", text))
 
 
-def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[datetime] = None) -> List[Schedule]:
+def filter_upcoming_departures(
+    schedule: List[Schedule], current_time: Optional[datetime] = None
+) -> List[Schedule]:
     """Filter schedule to show only upcoming departures.
-    
+
     Args:
         schedule: List of schedule items
         current_time: Current time (defaults to now in UTC)
-    
+
     Returns:
         List of upcoming schedule items (not limited here, display limiting handled by caller)
     """
@@ -34,7 +36,9 @@ def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[
         if item.departure:
             try:
                 # Parse ISO 8601 datetime with timezone
-                departure_dt = datetime.fromisoformat(item.departure.replace('Z', '+00:00'))
+                departure_dt = datetime.fromisoformat(
+                    item.departure.replace("Z", "+00:00")
+                )
 
                 # Compare with current time
                 if departure_dt > current_time:
@@ -48,17 +52,22 @@ def filter_upcoming_departures(schedule: List[Schedule], current_time: Optional[
     return upcoming
 
 
-def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], current_page: int = 1,
-                          total_pages: int = 1) -> str:
+def format_schedule_reply(
+    station_id: str,
+    date: str,
+    schedule: List[Schedule],
+    current_page: int = 1,
+    total_pages: int = 1,
+) -> str:
     """Format schedule data for telegram response.
-    
+
     Args:
         station_id: Station ID
         date: Date string
         schedule: List of schedule items
         current_page: Current page number
         total_pages: Total number of pages
-    
+
     Returns:
         Formatted schedule message
     """
@@ -66,11 +75,13 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
         # Format no departures message
         header = get_message("schedule_no_departures")
         separator = "═" * 24
-        station_info = get_message("schedule_station", station_id=station_id, station_name="")
+        station_info = get_message(
+            "schedule_station", station_id=station_id, station_name=""
+        )
         date_info = f"📅 **Дата:** {date}"
         error_msg = "❌ Запланированные отправления не найдены"
         suggestions = get_message("schedule_no_departures_suggestions")
-        
+
         return f"{header}\n{separator}\n\n{station_info}\n{date_info}\n\n{error_msg}\n\n{suggestions}"
 
     # Get station name from first schedule item if available
@@ -86,13 +97,15 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
     # Build header
     header = get_message("schedule_title", date=date)
     separator = "═" * 28
-    station_info = get_message("schedule_station", station_id=station_id, station_name=station_name)
-    
+    station_info = get_message(
+        "schedule_station", station_id=station_id, station_name=station_name
+    )
+
     # Add pagination if needed
     page_info = ""
     if total_pages > 1:
         page_info = f"\n{get_message('schedule_page', current_page=current_page, total_pages=total_pages)}"
-    
+
     reply_text = f"{header}\n{separator}\n\n{station_info}{page_info}\n\n"
 
     # Process each schedule item
@@ -101,21 +114,29 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
         time_info = ""
         if schedule_item.arrival and schedule_item.departure:
             try:
-                arrival_dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
-                departure_dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
-                arrival_time = arrival_dt.strftime('%H:%M')
-                departure_time = departure_dt.strftime('%H:%M')
+                arrival_dt = datetime.fromisoformat(
+                    schedule_item.arrival.replace("Z", "+00:00")
+                )
+                departure_dt = datetime.fromisoformat(
+                    schedule_item.departure.replace("Z", "+00:00")
+                )
+                arrival_time = arrival_dt.strftime("%H:%M")
+                departure_time = departure_dt.strftime("%H:%M")
                 arr_text = get_message("schedule_arrives")
                 dep_text = get_message("schedule_departs")
-                time_info = f"🕒 {arr_text}: {arrival_time}  •  {dep_text}: {departure_time}"
+                time_info = (
+                    f"🕒 {arr_text}: {arrival_time}  •  {dep_text}: {departure_time}"
+                )
             except (ValueError, AttributeError):
                 arr_text = get_message("schedule_arrives")
                 dep_text = get_message("schedule_departs")
                 time_info = f"🕒 {arr_text}: {schedule_item.arrival}  •  {dep_text}: {schedule_item.departure}"
         elif schedule_item.departure:
             try:
-                dt = datetime.fromisoformat(schedule_item.departure.replace('Z', '+00:00'))
-                departure_time = dt.strftime('%H:%M')
+                dt = datetime.fromisoformat(
+                    schedule_item.departure.replace("Z", "+00:00")
+                )
+                departure_time = dt.strftime("%H:%M")
                 dep_text = get_message("schedule_departure")
                 time_info = f"🕒 {dep_text}: {departure_time}"
             except (ValueError, AttributeError):
@@ -123,8 +144,10 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
                 time_info = f"🕒 {dep_text}: {schedule_item.departure}"
         elif schedule_item.arrival:
             try:
-                dt = datetime.fromisoformat(schedule_item.arrival.replace('Z', '+00:00'))
-                arrival_time = dt.strftime('%H:%M')
+                dt = datetime.fromisoformat(
+                    schedule_item.arrival.replace("Z", "+00:00")
+                )
+                arrival_time = dt.strftime("%H:%M")
                 arr_text = get_message("schedule_arrival")
                 time_info = f"🕒 {arr_text}: {arrival_time}"
             except (ValueError, AttributeError):
@@ -166,7 +189,9 @@ def format_schedule_reply(station_id: str, date: str, schedule: List[Schedule], 
     return reply_text.strip()
 
 
-def create_pagination_keyboard(station_id: str, current_page: int, total_pages: int) -> InlineKeyboardMarkup:
+def create_pagination_keyboard(
+    station_id: str, current_page: int, total_pages: int
+) -> InlineKeyboardMarkup:
     """Create pagination keyboard for schedule navigation."""
     keyboard = []
 
@@ -184,7 +209,7 @@ def create_pagination_keyboard(station_id: str, current_page: int, total_pages: 
     page_indicator = f"Page {current_page}/{total_pages}"
     buttons.append(InlineKeyboardButton(page_indicator, callback_data="noop"))
 
-    # Next button  
+    # Next button
     if current_page < total_pages:
         next_callback = f"schedule_page:{station_id}:{current_page + 1}"
         buttons.append(InlineKeyboardButton("Next ▶️", callback_data=next_callback))
@@ -193,14 +218,16 @@ def create_pagination_keyboard(station_id: str, current_page: int, total_pages: 
     return InlineKeyboardMarkup(keyboard)
 
 
-def paginate_schedule(schedule: List[Schedule], page: int = 1, per_page: int = 10) -> Tuple[List[Schedule], int, int]:
+def paginate_schedule(
+    schedule: List[Schedule], page: int = 1, per_page: int = 10
+) -> Tuple[List[Schedule], int, int]:
     """Paginate schedule results.
-    
+
     Args:
         schedule: List of schedule items
         page: Current page number (1-based)
         per_page: Items per page
-        
+
     Returns:
         Tuple of (paginated_items, current_page, total_pages)
     """

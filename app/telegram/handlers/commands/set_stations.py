@@ -47,7 +47,9 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user = update.effective_user
     if not user or not hasattr(user, "id") or update.message is None:
         return ConversationHandler.END
-    logger.info("User %s started set stations", user.username if user.username else user.id)
+    logger.info(
+        "User %s started set stations", user.username if user.username else user.id
+    )
 
     # Store user data
     if not hasattr(context, "user_data") or context.user_data is None:
@@ -60,22 +62,28 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Check if user already has stations set
     db_user = await UserService.get_user(user.id)
     if db_user:
-        base_exists = bool(getattr(db_user, 'base_station_code', None))
-        dest_exists = bool(getattr(db_user, 'destination_code', None))
+        base_exists = bool(getattr(db_user, "base_station_code", None))
+        dest_exists = bool(getattr(db_user, "destination_code", None))
         if base_exists and dest_exists:
-            logger.info("User %s already has stations set, preventing update", user.username if user.username else user.id)
+            logger.info(
+                "User %s already has stations set, preventing update",
+                user.username if user.username else user.id,
+            )
             await update.message.reply_text(get_message("setstations_already_set"))
             return ConversationHandler.END
         elif base_exists and not dest_exists:
-            context.user_data['base_station'] = SimpleNamespace(
+            context.user_data["base_station"] = SimpleNamespace(
                 code=db_user.base_station_code,
                 title=db_user.base_station_title,
-                settlement_title=getattr(db_user, 'base_station_settlement', 'Unknown'),
-                direction=''
+                settlement_title=getattr(db_user, "base_station_settlement", "Unknown"),
+                direction="",
             )
-            base_title = getattr(db_user, 'base_station_title', '-') or '-'
-            base_code = getattr(db_user, 'base_station_code', '-') or '-'
-            logger.info("User %s has base station set but missing destination, prompting for destination", user.username if user.username else user.id)
+            base_title = getattr(db_user, "base_station_title", "-") or "-"
+            base_code = getattr(db_user, "base_station_code", "-") or "-"
+            logger.info(
+                "User %s has base station set but missing destination, prompting for destination",
+                user.username if user.username else user.id,
+            )
             await update.message.reply_text(
                 get_message(
                     "setstations_destination_pending",
@@ -85,15 +93,18 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             )
             return CHOOSING_DEST
         elif dest_exists and not base_exists:
-            context.user_data['destination_station'] = SimpleNamespace(
+            context.user_data["destination_station"] = SimpleNamespace(
                 code=db_user.destination_code,
                 title=db_user.destination_title,
-                settlement_title=getattr(db_user, 'destination_settlement', 'Unknown'),
-                direction=''
+                settlement_title=getattr(db_user, "destination_settlement", "Unknown"),
+                direction="",
             )
-            dest_title = getattr(db_user, 'destination_title', '-') or '-'
-            dest_code = getattr(db_user, 'destination_code', '-') or '-'
-            logger.info("User %s has destination station set but missing base, prompting for base station", user.username if user.username else user.id)
+            dest_title = getattr(db_user, "destination_title", "-") or "-"
+            dest_code = getattr(db_user, "destination_code", "-") or "-"
+            logger.info(
+                "User %s has destination station set but missing base, prompting for base station",
+                user.username if user.username else user.id,
+            )
             await update.message.reply_text(
                 get_message(
                     "setstations_base_pending",
@@ -103,7 +114,10 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             )
             return CHOOSING_BASE
 
-    logger.info("User %s entering base station selection", user.username if user.username else user.id)
+    logger.info(
+        "User %s entering base station selection",
+        user.username if user.username else user.id,
+    )
 
     separator = get_message("separator")
     intro_message = (
@@ -119,9 +133,15 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return CHOOSING_BASE
 
 
-async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def handle_base_station(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Handle base station input."""
-    if update.message is None or not hasattr(update.message, "text") or context.user_data is None:
+    if (
+        update.message is None
+        or not hasattr(update.message, "text")
+        or context.user_data is None
+    ):
         return CHOOSING_BASE
     query = (update.message.text or "").strip()
     if not query:
@@ -142,14 +162,22 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
     service = get_stations_service()
     try:
         stations = await service.search_stations(query, limit=5)
-        logger.info("User %s base station search returned %d results", user_id, len(stations) if stations else 0)
+        logger.info(
+            "User %s base station search returned %d results",
+            user_id,
+            len(stations) if stations else 0,
+        )
     except Exception as e:
         logger.error("User %s failed to search stations: %s", user_id, e)
         await update.message.reply_text(get_message("setstations_search_error"))
         return CHOOSING_BASE
 
     if not stations:
-        logger.info("User %s base station search found no results for query: '%s'", user_id, query)
+        logger.info(
+            "User %s base station search found no results for query: '%s'",
+            user_id,
+            query,
+        )
         await update.message.reply_text(
             get_message("setstations_no_stations_found", query=query)
         )
@@ -162,7 +190,9 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
         button_text = f"{station.title} ({station.code}) - {station.settlement_title}"
         if station.direction:
             button_text += f" [{station.direction}]"
-        keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
+        keyboard.append(
+            [InlineKeyboardButton(button_text, callback_data=callback_data)]
+        )
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -171,12 +201,14 @@ async def handle_base_station(update: Update, context: ContextTypes.DEFAULT_TYPE
             count=len(stations),
             station_type=get_message("setstations_type_base"),
         ),
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
     )
     return CHOOSING_BASE  # Stay in state until selection
 
 
-async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def handle_station_selection(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Handle station selection from inline keyboard."""
     query = update.callback_query
     if query is None or not hasattr(query, "data") or context.user_data is None:
@@ -193,12 +225,14 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
     if not (isinstance(data, str) and data.startswith(STATION_SELECT)):
         return ConversationHandler.END
 
-    parts = data[len(STATION_SELECT):].split(":", 1)
+    parts = data[len(STATION_SELECT) :].split(":", 1)
     if len(parts) != 2:
         return ConversationHandler.END
 
     station_type, code = parts
-    logger.info("User %s selected %s station with code: %s", user_id, station_type, code)
+    logger.info(
+        "User %s selected %s station with code: %s", user_id, station_type, code
+    )
 
     service = get_stations_service()
     try:
@@ -209,7 +243,9 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
         return ConversationHandler.END
 
     if not station:
-        logger.warning("User %s selected non-existent station with code: %s", user_id, code)
+        logger.warning(
+            "User %s selected non-existent station with code: %s", user_id, code
+        )
         await query.edit_message_text(get_message("setstations_station_not_found"))
         return ConversationHandler.END
 
@@ -226,12 +262,24 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
             station_details["code"],
             station_details["settlement"],
         )
-        existing_dest = context.user_data.get("destination_station") if context.user_data else None
+        existing_dest = (
+            context.user_data.get("destination_station") if context.user_data else None
+        )
         if existing_dest:
             dest_details = _station_details(existing_dest)
             keyboard = [
-                [InlineKeyboardButton(get_message("setstations_button_yes"), callback_data=f"{STATION_CONFIRM}yes")],
-                [InlineKeyboardButton(get_message("setstations_button_no"), callback_data=f"{STATION_CONFIRM}no")],
+                [
+                    InlineKeyboardButton(
+                        get_message("setstations_button_yes"),
+                        callback_data=f"{STATION_CONFIRM}yes",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        get_message("setstations_button_no"),
+                        callback_data=f"{STATION_CONFIRM}no",
+                    )
+                ],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             logger.info(
@@ -293,8 +341,18 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
             dest_details["code"],
         )
         keyboard = [
-            [InlineKeyboardButton(get_message("setstations_button_yes"), callback_data=f"{STATION_CONFIRM}yes")],
-            [InlineKeyboardButton(get_message("setstations_button_no"), callback_data=f"{STATION_CONFIRM}no")],
+            [
+                InlineKeyboardButton(
+                    get_message("setstations_button_yes"),
+                    callback_data=f"{STATION_CONFIRM}yes",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    get_message("setstations_button_no"),
+                    callback_data=f"{STATION_CONFIRM}no",
+                )
+            ],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         confirmation_text = (
@@ -312,7 +370,9 @@ async def handle_station_selection(update: Update, context: ContextTypes.DEFAULT
     return ConversationHandler.END
 
 
-async def handle_destination_station(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def handle_destination_station(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Handle destination station input."""
     if update.message is None or not hasattr(update.message, "text"):
         return CHOOSING_DEST
@@ -329,20 +389,30 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
             user_id = user.id
     else:
         user_id = "unknown"
-    logger.info("User %s searching for destination station with query: '%s'", user_id, query)
+    logger.info(
+        "User %s searching for destination station with query: '%s'", user_id, query
+    )
 
     # Search for stations
     service = get_stations_service()
     try:
         stations = await service.search_stations(query, limit=5)
-        logger.info("User %s destination station search returned %d results", user_id, len(stations) if stations else 0)
+        logger.info(
+            "User %s destination station search returned %d results",
+            user_id,
+            len(stations) if stations else 0,
+        )
     except Exception as e:
         logger.error("User %s failed to search stations: %s", user_id, e)
         await update.message.reply_text(get_message("setstations_search_error"))
         return CHOOSING_DEST
 
     if not stations:
-        logger.info("User %s destination station search found no results for query: '%s'", user_id, query)
+        logger.info(
+            "User %s destination station search found no results for query: '%s'",
+            user_id,
+            query,
+        )
         await update.message.reply_text(
             get_message("setstations_no_stations_found", query=query)
         )
@@ -355,7 +425,9 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
         button_text = f"{station.title} ({station.code}) - {station.settlement_title}"
         if station.direction:
             button_text += f" [{station.direction}]"
-        keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
+        keyboard.append(
+            [InlineKeyboardButton(button_text, callback_data=callback_data)]
+        )
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -364,12 +436,14 @@ async def handle_destination_station(update: Update, context: ContextTypes.DEFAU
             count=len(stations),
             station_type=get_message("setstations_type_destination"),
         ),
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
     )
     return CHOOSING_DEST
 
 
-async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def handle_confirmation(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Handle confirmation."""
     query = update.callback_query
     if query is None or not hasattr(query, "data"):
@@ -389,7 +463,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not (isinstance(data, str) and data.startswith(STATION_CONFIRM)):
         return ConversationHandler.END
 
-    confirm = data[len(STATION_CONFIRM):]
+    confirm = data[len(STATION_CONFIRM) :]
 
     if confirm == "no":
         logger.info("User %s cancelled station setup", user_id)
@@ -415,11 +489,21 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         first_name = user_data.get("first_name", "")
         last_name = user_data.get("last_name", "")
         base_code = getattr(base, "code", "") if base and hasattr(base, "code") else ""
-        base_title = getattr(base, "title", "") if base and hasattr(base, "title") else ""
+        base_title = (
+            getattr(base, "title", "") if base and hasattr(base, "title") else ""
+        )
         dest_code = getattr(dest, "code", "") if dest and hasattr(dest, "code") else ""
-        dest_title = getattr(dest, "title", "") if dest and hasattr(dest, "title") else ""
+        dest_title = (
+            getattr(dest, "title", "") if dest and hasattr(dest, "title") else ""
+        )
         # Only proceed if all required fields are present
-        if not (isinstance(telegram_id, int) and base_code and base_title and dest_code and dest_title):
+        if not (
+            isinstance(telegram_id, int)
+            and base_code
+            and base_title
+            and dest_code
+            and dest_title
+        ):
             logger.error("User %s missing required data for saving stations", user_id)
             await query.edit_message_text(get_message("setstations_missing_data"))
             return ConversationHandler.END
@@ -436,8 +520,14 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
             destination_code=dest_code,
             destination_title=dest_title,
         )
-        logger.info("User %s successfully saved stations: base=%s (%s), dest=%s (%s)", 
-                   user_id, base_title, base_code, dest_title, dest_code)
+        logger.info(
+            "User %s successfully saved stations: base=%s (%s), dest=%s (%s)",
+            user_id,
+            base_title,
+            base_code,
+            dest_title,
+            dest_code,
+        )
         base_details = _station_details(base)
         dest_details = _station_details(dest)
         separator = get_message("separator")
@@ -462,12 +552,16 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancel the conversation."""
     user = update.effective_user
-    user_id = user.username if user and user.username else (user.id if user else "unknown")
+    user_id = (
+        user.username if user and user.username else (user.id if user else "unknown")
+    )
     logger.info("User %s cancelled set stations conversation", user_id)
     if update.message is not None:
         await update.message.reply_text(get_message("setstations_cancelled"))
     elif update.callback_query is not None:
-        await update.callback_query.edit_message_text(get_message("setstations_cancelled"))
+        await update.callback_query.edit_message_text(
+            get_message("setstations_cancelled")
+        )
     else:
         # Fallback if neither message nor callback_query is available
         pass
@@ -480,11 +574,15 @@ set_stations_handler = ConversationHandler(
     states={
         CHOOSING_BASE: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_base_station),
-            CallbackQueryHandler(handle_station_selection, pattern=f"^{STATION_SELECT}"),
+            CallbackQueryHandler(
+                handle_station_selection, pattern=f"^{STATION_SELECT}"
+            ),
         ],
         CHOOSING_DEST: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_destination_station),
-            CallbackQueryHandler(handle_station_selection, pattern=f"^{STATION_SELECT}"),
+            CallbackQueryHandler(
+                handle_station_selection, pattern=f"^{STATION_SELECT}"
+            ),
         ],
         CONFIRM: [
             CallbackQueryHandler(handle_confirmation, pattern=f"^{STATION_CONFIRM}"),
