@@ -251,6 +251,7 @@ class StationsService:
         await collection.drop()
 
         documents = _build_station_documents(response)
+        documents = _build_station_documents(response)
 
         if documents:
             await collection.insert_many(documents)
