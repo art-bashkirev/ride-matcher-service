@@ -31,7 +31,9 @@ class FeatureFlagService:
             defaults={"is_enabled": default_enabled},
         )
         if created:
-            logger.info("Feature flag %s created with default state=%s", key, default_enabled)
+            logger.info(
+                "Feature flag %s created with default state=%s", key, default_enabled
+            )
         return flag
 
     @classmethod
@@ -46,13 +48,19 @@ class FeatureFlagService:
 
         try:
             flag = await FeatureFlag.create(key=key, is_enabled=default)
-            logger.info("Feature flag %s missing; created with default state=%s", key, default)
+            logger.info(
+                "Feature flag %s missing; created with default state=%s", key, default
+            )
         except IntegrityError:
             # Another coroutine might have created it concurrently; refetch
             flag = await cls.get_flag(key)
             if flag:
                 return flag.is_enabled
-            logger.error("Feature flag %s could not be created or fetched; returning default=%s", key, default)
+            logger.error(
+                "Feature flag %s could not be created or fetched; returning default=%s",
+                key,
+                default,
+            )
             return bool(default)
 
         return flag.is_enabled

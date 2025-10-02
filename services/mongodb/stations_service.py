@@ -7,11 +7,16 @@ from pydantic import BaseModel
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 
+from config.log_setup import get_logger
 from config.settings import get_config
+
+
+COND_KEY = "$cond"
 
 
 class StationDocument(BaseModel):
     """Station document for MongoDB."""
+
     code: str  # Primary code from codes.yandex_code or similar
     title: str
     station_type: Optional[str]
@@ -25,6 +30,76 @@ class StationDocument(BaseModel):
     all_codes: List[str]  # All codes for searching
 
 
+def _build_station_documents(response) -> list[dict]:
+    documents: list[dict] = []
+    for station_ctx in _iter_station_entries(response):
+        document = _build_single_station_document(*station_ctx)
+        if document:
+            documents.append(document)
+    return documents
+
+
+def _iter_station_entries(response):
+    for country in getattr(response, "countries", None) or []:
+        country_title = getattr(country, "title", "") or ""
+        yield from _iter_region_entries(country, country_title)
+
+
+def _iter_region_entries(country, country_title: str):
+    for region in getattr(country, "regions", None) or []:
+        region_title = getattr(region, "title", "") or ""
+        yield from _iter_settlement_entries(region, country_title, region_title)
+
+
+def _iter_settlement_entries(region, country_title: str, region_title: str):
+    for settlement in getattr(region, "settlements", None) or []:
+        settlement_title = getattr(settlement, "title", "") or ""
+        for station in getattr(settlement, "stations", None) or []:
+            yield station, country_title, region_title, settlement_title
+
+
+def _build_single_station_document(
+    station, country_title: str, region_title: str, settlement_title: str
+) -> dict | None:
+    codes = getattr(station, "codes", None)
+    if not codes:
+        return None
+
+    primary_code = getattr(codes, "yandex_code", None) or getattr(
+        codes, "esr_code", None
+    )
+    if not primary_code:
+        return None
+
+    all_codes: list[str] = []
+    if getattr(codes, "yandex_code", None):
+        all_codes.append(codes.yandex_code)
+    if getattr(codes, "esr_code", None):
+        all_codes.append(codes.esr_code)
+
+    station_type = getattr(station, "station_type", None)
+    transport_type = getattr(station, "transport_type", None)
+
+    doc = StationDocument(
+        code=primary_code,
+        title=getattr(station, "title", "") or "",
+        station_type=station_type.value if station_type else None,
+        transport_type=transport_type.value if transport_type else "",
+        direction=getattr(station, "direction", None),
+        longitude=(
+            float(station.longitude) if getattr(station, "longitude", None) else None
+        ),
+        latitude=(
+            float(station.latitude) if getattr(station, "latitude", None) else None
+        ),
+        settlement_title=settlement_title,
+        region_title=region_title,
+        country_title=country_title,
+        all_codes=all_codes,
+    )
+    return doc.model_dump()
+
+
 class StationsService:
     """Service for MongoDB operations on stations."""
 
@@ -32,32 +107,72 @@ class StationsService:
         self.config = get_config()
         self._client: Optional[AsyncMongoClient] = None
         self._db: Optional[AsyncDatabase] = None
+        self._logger = get_logger(__name__)
 
     async def _get_client(self) -> AsyncMongoClient:
         """Get MongoDB client."""
         if self._client is None:
-            if not all([self.config.mongodb_host, self.config.mongodb_user, self.config.mongodb_password]):
-                raise ValueError("MongoDB configuration incomplete")
-            uri = f"mongodb+srv://{self.config.mongodb_user}:{self.config.mongodb_password}@{self.config.mongodb_host}/?retryWrites=true&w=majority"
+            uri = self._build_connection_uri()
             self._client = AsyncMongoClient(uri)
+            self._logger.info(
+                "MongoDB client created for stations service using %s",
+                self._sanitize_uri(uri),
+            )
+            await asyncio.sleep(0)
         return self._client
+
+    def _build_connection_uri(self) -> str:
+        if self.config.mongodb_url:
+            return self.config.mongodb_url
+
+        host = self.config.mongodb_host
+        user = self.config.mongodb_user
+        password = self.config.mongodb_password
+
+        if not host:
+            raise ValueError(
+                "MongoDB configuration incomplete: provide MONGODB_URL or host credentials"
+            )
+
+        if host.startswith("mongodb://") or host.startswith("mongodb+srv://"):
+            base = host
+        else:
+            base = f"mongodb://{host}"
+
+        if user and password and "@" not in base.split("://", 1)[1]:
+            scheme, remainder = base.split("://", 1)
+            return f"{scheme}://{user}:{password}@{remainder}"
+
+        return base
+
+    @staticmethod
+    def _sanitize_uri(uri: str) -> str:
+        if "@" in uri:
+            scheme, remainder = uri.split("://", 1)
+            if "@" in remainder:
+                host_part = remainder.split("@", 1)[1]
+                return f"{scheme}://***:***@{host_part}"
+        return uri
 
     async def _get_db(self) -> AsyncDatabase:
         """Get database."""
         if self._db is None:
             client = await self._get_client()
-            self._db = client["ride_matcher"]
+            self._db = client[self.config.mongodb_database or "ride_matcher"]
         return self._db
 
     async def get_stations_collection(self):
         """Get stations collection."""
         db = await self._get_db()
-        return db["stations"]
+        collection_name = self.config.mongodb_stations_collection or "stations"
+        return db[collection_name]
 
-    async def search_stations(self, query: str, limit: int = 10) -> List[StationDocument]:
+    async def search_stations(
+        self, query: str, limit: int = 10
+    ) -> List[StationDocument]:
         """Search stations by title or code."""
         collection = await self.get_stations_collection()
-        
+
         # Use aggregation pipeline to score and sort results
         # Normalize query for exact title match (case-insensitive, trimmed)
         norm_query = query.strip().lower()
@@ -81,32 +196,39 @@ class StationsService:
             {
                 "$addFields": {
                     "score": {
-                        "$cond": {
-                            "if": {"$eq": [{"$toLower": {"$trim": {"input": "$title"}}}, norm_query]},
+                        COND_KEY: {
+                            "if": {
+                                "$eq": [
+                                    {"$toLower": {"$trim": {"input": "$title"}}},
+                                    norm_query,
+                                ]
+                            },
                             "then": 5,  # Exact title match (case-insensitive, trimmed)
                             "else": {
-                                "$cond": {
+                                COND_KEY: {
                                     "if": {"$in": [query, "$all_codes"]},
                                     "then": 4,  # Exact code match
                                     "else": {
-                                        "$cond": {
-                                            "if": {"$regexMatch": {"input": "$title", "regex": query, "options": "i"}},
+                                        COND_KEY: {
+                                            "if": {
+                                                "$regexMatch": {
+                                                    "input": "$title",
+                                                    "regex": query,
+                                                    "options": "i",
+                                                }
+                                            },
                                             "then": 2,  # Partial title match
-                                            "else": 1   # Other
+                                            "else": 1,  # Other
                                         }
-                                    }
+                                    },
                                 }
-                            }
+                            },
                         }
                     }
                 }
             },
-            {
-                "$sort": {"score": -1, "title": 1}
-            },
-            {
-                "$limit": limit
-            }
+            {"$sort": {"score": -1, "title": 1}},
+            {"$limit": limit},
         ]
         cursor = await collection.aggregate(pipeline)
         results = await cursor.to_list(length=limit)
@@ -128,36 +250,7 @@ class StationsService:
         # Clear existing data
         await collection.drop()
 
-        documents = []
-        for country in response.countries:
-            for region in country.regions:
-                for settlement in region.settlements:
-                    for station in settlement.stations:
-                        # Use yandex_code as primary code, fallback to esr_code
-                        primary_code = station.codes.yandex_code or station.codes.esr_code
-                        if not primary_code:
-                            continue  # Skip stations without codes
-
-                        all_codes = []
-                        if station.codes.yandex_code:
-                            all_codes.append(station.codes.yandex_code)
-                        if station.codes.esr_code:
-                            all_codes.append(station.codes.esr_code)
-
-                        doc = StationDocument(
-                            code=primary_code,
-                            title=station.title,
-                            station_type=station.station_type.value if station.station_type else None,
-                            transport_type=station.transport_type.value,
-                            direction=station.direction,
-                            longitude=float(station.longitude) if station.longitude else None,
-                            latitude=float(station.latitude) if station.latitude else None,
-                            settlement_title=settlement.title,
-                            region_title=region.title,
-                            country_title=country.title,
-                            all_codes=all_codes,
-                        )
-                        documents.append(doc.model_dump())
+        documents = _build_station_documents(response)
 
         if documents:
             await collection.insert_many(documents)
@@ -165,7 +258,7 @@ class StationsService:
             await collection.create_index("code", unique=True)
             await collection.create_index("title")
             await collection.create_index("all_codes")
-            print(f"Inserted {len(documents)} stations into MongoDB")
+            self._logger.info("Inserted %d stations into MongoDB", len(documents))
 
     async def close(self):
         """Close MongoDB connection."""

@@ -63,7 +63,7 @@ watchfiles 'python main.py'
 * Add tests for handlers & lifecycle.
 * Add more API endpoints.
 
-# Ride Matcher Service
+## Ride Matcher Service
 
 A service for matching ride requests with train schedules using the Yandex Schedules API.
 
@@ -103,9 +103,12 @@ This project uses Pydantic BaseSettings for configuration management.
 * `LOG_LEVEL` (optional): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) default: INFO
 * `HTTP_HOST` / `HTTP_PORT` (optional): Host/port for health & future HTTP endpoints (defaults: 0.0.0.0:8000)
 * `TELEGRAM_BOT_TOKEN` (optional): If provided, the Telegram bot will start; omitted disables bot
+* `TELEGRAM_PARSE_MODE` (optional): Overrides default Markdown parse mode for outbound Telegram messages (`Markdown`, `MarkdownV2`, `HTML`)
 * `POSTGRES_URL` / `DATABASE_URL` (required for persistence): PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/dbname`). If it starts with `postgresql://`, the service automatically normalizes it to `postgres://` for Tortoise ORM compatibility. Legacy `POSTGRESQL_URI` is still accepted for backward compatibility.
 * `REDIS_URL` (optional but preferred): Full Redis connection URL (e.g. `redis://default:password@host:6379/0`). When set, it takes precedence over the host/port fields below. Legacy `REDIS_URI` remains supported.
 * `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_USERNAME`, `REDIS_PASSWORD` (optional): Fallback Redis parameters used only when `REDIS_URL` is not provided.
+* `MONGODB_URL` (optional): Full MongoDB connection string (including credentials if needed). Takes precedence over the individual host credentials below.
+* `MONGODB_DATABASE`, `MONGODB_STATIONS_COLLECTION`, `MONGODB_SEARCH_RESULTS_COLLECTION` (optional): Override default database/collection names used for station metadata and ride matching state.
 
 ### Running (HTTP health + Telegram bot)
 

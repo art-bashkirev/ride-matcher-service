@@ -8,18 +8,15 @@ EMOJIS = {
     "time": "🕒",
     "schedule": "📅",
     "route": "📍",
-    
     # Status and actions
     "loading": "⏳",
     "success": "✅",
     "error": "❌",
     "question": "❓",
-    
     # Profile and user
     "user": "👤",
     "home": "🏠",
     "target": "🎯",
-    
     # Interface
     "help": "❓",
     "start": "🚀",
@@ -35,7 +32,6 @@ MESSAGES = {
     "separator": "═══════════════════════",
     "loading": f"{EMOJIS['loading']} **Загрузка данных...**\n\nПожалуйста, подождите...",
     "error_generic": f"{EMOJIS['error']} **Ошибка**\n\nЧто-то пошло не так. Пожалуйста, попробуйте еще раз.",
-    
     # Schedule
     "schedule_title": f"{EMOJIS['schedule']} **Расписание на {{date}}**",
     "schedule_station": f"{EMOJIS['station']} **Станция:** {{station_id}}{{station_name}}",
@@ -49,7 +45,6 @@ MESSAGES = {
     "schedule_platform": "Платформа",
     "schedule_stops": "Остановки",
     "schedule_time_na": f"{EMOJIS['time']} Время: Н/Д",
-    
     # Profile
     "profile_title": f"{EMOJIS['user']} **Информация профиля**",
     "profile_username": "**Имя пользователя:**",
@@ -60,13 +55,12 @@ MESSAGES = {
     "profile_code": "Код:",
     "profile_not_found": "Профиль не найден. Пожалуйста, сначала установите ваши станции с помощью /setstations.",
     "profile_not_set": "Не установлено",
-    
     # Set Stations
     "setstations_title": f"{EMOJIS['train']} **Мастер настройки станций**",
     "setstations_step1": f"{EMOJIS['home']} **Шаг 1: Базовая станция**",
     "setstations_how_to_enter": f"{EMOJIS['tip']} **Как вводить:**",
     "setstations_intro_description": "Давайте настроим вашу базовую станцию (место начала поездки).",
-    "setstations_entry_options": "• Название станции (например, \"Москва-Пассажирская\")\n• Код станции (например, \"s1234567\")",
+    "setstations_entry_options": '• Название станции (например, "Москва-Пассажирская")\n• Код станции (например, "s1234567")',
     "setstations_enter_base": "Пожалуйста, введите название или код вашей базовой станции:",
     "setstations_base_set_success": f"{EMOJIS['success']} **Базовая станция успешно установлена!**",
     "setstations_next_step": f"{EMOJIS['target']} **Следующий шаг:** Пожалуйста, введите станцию назначения",
@@ -96,8 +90,7 @@ MESSAGES = {
     "setstations_missing_data": "Отсутствуют необходимые данные. Пожалуйста, начните заново.",
     "setstations_save_error": "Не удалось сохранить станции. Пожалуйста, попробуйте ещё раз.",
     "setstations_cancelled": "Операция отменена. Введите /cancel для выхода.",
-    
-    # Commands  
+    # Commands
     "help_title": f"{EMOJIS['help']} **Доступные команды**",
     "help_commands": f"""
 {EMOJIS['start']} /start - Инициализировать бота
@@ -110,35 +103,31 @@ MESSAGES = {
 🔙 /goback - Найти поезда и попутчиков (пункт назначения → база)
 ❌ /cancelride - Отменить поиск попутчиков""",
     "help_need_help": f"{EMOJIS['tip']} **Нужна помощь?** Просто введите команду для начала!",
-    
     "start_welcome": f"{EMOJIS['celebration']} **Добро пожаловать в Ride Matcher!**",
     "start_get_started": f"{EMOJIS['start']} **Начать работу:**",
     "start_ready": "Готовы исследовать? Введите /help для начала!",
     "start_greeting_with_stations": "Привет, {mention}! Я здесь, чтобы помочь вам с расписанием поездов.",
     "start_greeting_no_stations": "Привет, {mention}! Я здесь, чтобы помочь вам с расписанием поездов и информацией о станциях.",
-    "start_your_base_station": EMOJIS['home'] + " **Ваша базовая станция:** {base_station}",
-    "start_your_destination": EMOJIS['target'] + " **Ваше назначение:** {destination}",
+    "start_your_base_station": EMOJIS["home"]
+    + " **Ваша базовая станция:** {base_station}",
+    "start_your_destination": EMOJIS["target"] + " **Ваше назначение:** {destination}",
     "start_use_menu": "Используйте меню ниже для проверки расписания!",
     "start_set_stations_instruction": "• Используйте /setstations для настройки ваших станций (обязательно)",
     "start_help_instruction": "• Используйте /help для просмотра всех доступных команд",
     "start_please_set_stations": "⚠️ Пожалуйста, сначала установите ваши станции с помощью /setstations!",
-    
     "test_title": "**Тестовая команда**",
-    "test_quote": "*\"Мы нужны им такими, какие мы есть. Так что будьте собой. Только лучше.\"*",
+    "test_quote": '*"Мы нужны им такими, какие мы есть. Так что будьте собой. Только лучше."*',
     "test_working": f"{EMOJIS['success']} Бот работает отлично!",
-    
     "stats_title": f"{EMOJIS['stats']} **Статистика кэша**",
     "stats_intro": "Привет, {mention}! Вот текущая статистика кэша:",
     "stats_message": "**Статистика:** {stats}",
     "stats_tip": f"{EMOJIS['tip']} *Кэш помогает улучшить время отклика, сохраняя часто используемые данные.*",
-    
     # Schedule Command
     "schedule_cmd_help_title": f"{EMOJIS['train']} **Помощь по команде расписания**",
     "schedule_cmd_missing_id": f"{EMOJIS['question']} **Отсутствует ID станции**",
     "schedule_cmd_usage": "**Использование:**\n`/schedule s9600213`",
     "schedule_cmd_format": "**Формат:**\n• ID станции: 's' + 7 цифр\n• Пример: s9600213",
     "schedule_cmd_tip": f"{EMOJIS['tip']} **Совет:** Используйте /setstations для настройки ваших станций!",
-    
     "schedule_error_invalid_format": f"{EMOJIS['error']} **Неверный формат ID станции**",
     "schedule_error_you_entered": "**Вы ввели:** `{station_id}`",
     "schedule_error_expected_format": "**Ожидаемый формат:**\n• 's' с последующими 7 цифрами\n• Пример: s9600213",
@@ -147,21 +136,23 @@ MESSAGES = {
     "schedule_data_source_api": "🌐 Свежие данные из API",
     "schedule_station_info": "\n🏛️ Станция: {title}{station_type}",
     "schedule_invalid_station_id": f"{EMOJIS['error']} Неверный формат ID станции",
-    "schedule_loading_schedule": "{emoji} Загрузка расписания...".format(emoji=EMOJIS['loading']),
-    "schedule_loading_page": "{emoji} Загрузка страницы...".format(emoji=EMOJIS['loading']),
+    "schedule_loading_schedule": "{emoji} Загрузка расписания...".format(
+        emoji=EMOJIS["loading"]
+    ),
+    "schedule_loading_page": "{emoji} Загрузка страницы...".format(
+        emoji=EMOJIS["loading"]
+    ),
     "schedule_error_loading_schedule": f"{EMOJIS['error']} Не удалось загрузить расписание. Пожалуйста, попробуйте ещё раз.",
     "schedule_error_loading_page": f"{EMOJIS['error']} Не удалось загрузить страницу расписания. Пожалуйста, попробуйте ещё раз.",
     "schedule_invalid_page_number": f"{EMOJIS['error']} Неверный номер страницы",
     "schedule_no_upcoming_departures": f"{EMOJIS['schedule']} Ближайшие отправления для станции "
-                                         "{station_id} на {date} не найдены.",
+    "{station_id} на {date} не найдены.",
     "schedule_no_departures_generic": f"{EMOJIS['schedule']} Отправления для станции "
-                                        "{station_id} на {date} не найдены.",
-    
+    "{station_id} на {date} не найдены.",
     # Errors
     "error_try_different_date": "• Попробуйте другую дату",
     "error_check_station_id": "• Проверьте ID станции",
     "error_contact_support": "• Обратитесь в поддержку при необходимости",
-    
     # Keyboard buttons
     "keyboard_schedule_base": f"{EMOJIS['home']} Моё расписание",
     "keyboard_schedule_dest": f"{EMOJIS['target']} Расписание до пункта назначения",
@@ -170,11 +161,9 @@ MESSAGES = {
     "keyboard_cancelride": "❌ Отменить поиск",
     "keyboard_help": f"{EMOJIS['help']} Помощь",
     "keyboard_profile": f"{EMOJIS['user']} Профиль",
-    
     # Echo/Message handlers
     "echo_station_id_suggestion": "Используйте /schedule {station_id} для получения информации о расписании.",
     "echo_set_stations_first": "⚠️ Пожалуйста, сначала установите ваши станции с помощью /setstations!",
-    
     # AI Mode messages
     "ai_mode_not_configured": "Режим AI включён, но не настроен должным образом.",
     "ai_empty_response": "Я получил пустой ответ от AI. Пожалуйста, попробуйте еще раз.",
@@ -194,11 +183,9 @@ MESSAGES = {
     "ai_mode_update_failed": "❌ Не удалось обновить режим AI. Пожалуйста, попробуйте позже.",
     "ai_mode_error_checking": "❌ Не удалось проверить статус режима AI. Пожалуйста, попробуйте позже.",
     "ai_mode_error_updating": "❌ Произошла ошибка при обновлении режима AI. Пожалуйста, попробуйте позже.",
-    
     # Echo Mode messages
     "echo_message_too_long": "Ваше сообщение слишком длинное для эха. Пожалуйста, отправьте более короткое сообщение.",
     "echo_technical_error": "Извините, я не смог повторить ваше сообщение из-за технической проблемы.",
-    
     # Ride Matching messages
     "ride_search_title": f"{EMOJIS['train']} **Поиск попутчиков**",
     "ride_search_searching": f"{EMOJIS['loading']} Ищу поезда и попутчиков...",
@@ -221,11 +208,11 @@ MESSAGES = {
 
 def get_message(key: str, **kwargs) -> str:
     """Get a message template and format it with provided variables.
-    
+
     Args:
         key: Message key to retrieve
         **kwargs: Variables to format into the message
-        
+
     Returns:
         Formatted message
     """
@@ -233,7 +220,7 @@ def get_message(key: str, **kwargs) -> str:
         template = MESSAGES[key]
     except KeyError:
         return f"[Missing message: {key}]"
-    
+
     # Format template with provided variables
     try:
         return template.format(**kwargs)

@@ -22,14 +22,14 @@ class ApiServerService:
         self._host = host or cfg.http_host
         self._port = port or cfg.http_port
         self._app = web.Application(middlewares=[request_logging_middleware])
-        self._app['started_at'] = None
+        self._app["started_at"] = None
         self._runner: Optional[web.AppRunner] = None
         self._site: Optional[web.TCPSite] = None
         self._started = False
         self._register_routes()
 
     def _register_routes(self):
-        self._app.router.add_get('/healthz', health)
+        self._app.router.add_get("/healthz", health)
 
     @property
     def app(self) -> web.Application:
@@ -44,7 +44,7 @@ class ApiServerService:
         await self._runner.setup()
         self._site = web.TCPSite(self._runner, host=self._host, port=self._port)
         await self._site.start()
-        self._app['started_at'] = time.time()
+        self._app["started_at"] = time.time()
         self._started = True
         logger.info("API server started on http://%s:%s", self._host, self._port)
 

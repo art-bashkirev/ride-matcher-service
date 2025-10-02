@@ -21,7 +21,9 @@ async def main():
     bot = TelegramBotService()
     await api.start()
     await bot.start()
-    logger.info("Service started. (No graceful shutdown handlers; Ctrl+C to terminate process)")
+    logger.info(
+        "Service started. (No graceful shutdown handlers; Ctrl+C to terminate process)"
+    )
     # Sleep forever
     await asyncio.Future()
 

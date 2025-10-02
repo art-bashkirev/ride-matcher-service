@@ -1,5 +1,6 @@
 """NVIDIA AI API client using aiohttp."""
 
+import asyncio
 import os
 from typing import Optional
 
@@ -12,9 +13,9 @@ logger = get_logger(__name__)
 
 class NvidiaAIClient:
     """NVIDIA AI API client for chat completions."""
-    
+
     BASE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-    
+
     def __init__(self, api_key: str | None = None, timeout: int = 30):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         if not self.api_key:
@@ -25,6 +26,7 @@ class NvidiaAIClient:
     async def start(self):
         if not self._session or self._session.closed:
             self._session = aiohttp.ClientSession(timeout=self.timeout)
+            await asyncio.sleep(0)
 
     async def close(self):
         if self._session and not self._session.closed:
@@ -41,14 +43,16 @@ class NvidiaAIClient:
         """Send a chat completion request to NVIDIA AI."""
         await self.start()
         if not self._session:
-            raise RuntimeError("Client session not initialized and could not be started.")
-        
+            raise RuntimeError(
+                "Client session not initialized and could not be started."
+            )
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-        
+
         payload = {
             "model": "google/gemma-3-27b-it",
             "messages": [{"role": "user", "content": user_message}],
@@ -57,21 +61,25 @@ class NvidiaAIClient:
             "top_p": 1.00,
             "frequency_penalty": 0.00,
             "presence_penalty": 0.00,
-            "stream": False
+            "stream": False,
         }
-        
+
         try:
-            async with self._session.post(self.BASE_URL, headers=headers, json=payload) as resp:
+            async with self._session.post(
+                self.BASE_URL, headers=headers, json=payload
+            ) as resp:
                 resp.raise_for_status()
                 data = await resp.json()
-                
+
                 # Extract response content from API response structure
-                if 'choices' in data and len(data['choices']) > 0:
-                    return data['choices'][0]['message']['content']
+                if "choices" in data and len(data["choices"]) > 0:
+                    return data["choices"][0]["message"]["content"]
                 else:
-                    logger.warning("Unexpected response structure from NVIDIA AI API: %s", data)
+                    logger.warning(
+                        "Unexpected response structure from NVIDIA AI API: %s", data
+                    )
                     return "I'm sorry, I couldn't process your message."
-                    
+
         except aiohttp.ClientError as e:
             logger.error("HTTP error when calling NVIDIA AI API: %s", e)
             return "I'm sorry, I'm having trouble connecting to the AI service."

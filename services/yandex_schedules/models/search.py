@@ -33,7 +33,9 @@ class SegmentPoint(BaseModel):
 
 class Segment(BaseModel):
     arrival: str | None = None
-    from_: SegmentPoint | None = Field(default=None, validation_alias='from', serialization_alias='from')
+    from_: SegmentPoint | None = Field(
+        default=None, validation_alias="from", serialization_alias="from"
+    )
     to: SegmentPoint | None = None
     thread: Thread | None = None
     departure_platform: str | None = None
@@ -64,11 +66,13 @@ class SearchSegment(BaseModel):
 class SearchClarification(BaseModel):
     date: str | None = None
     to: SearchPoint | None = None
-    from_: SearchPoint | None = Field(default=None, validation_alias='from', serialization_alias='from')
+    from_: SearchPoint | None = Field(
+        default=None, validation_alias="from", serialization_alias="from"
+    )
 
 
 class SearchRequest(BaseModel):
-    from_: str | None = Field(default=None, serialization_alias='from')
+    from_: str | None = Field(default=None, serialization_alias="from")
     to: str | None = None
     date: str | None = None
     transport_types: TransportType | None = None

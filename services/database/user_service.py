@@ -23,14 +23,16 @@ class UserService:
 
         await Tortoise.init(
             db_url=config.postgres_url,
-            modules={"models": ["models.user", "models.feature_flag"]}
+            modules={"models": ["models.user", "models.feature_flag"]},
         )
         # Try to generate schemas, but don't fail if they already exist
         try:
             await Tortoise.generate_schemas(safe=True)
             logger.info("Database schemas generated successfully")
         except Exception as e:
-            logger.warning(f"Schema generation failed (this is normal if tables already exist): {e}")
+            logger.warning(
+                f"Schema generation failed (this is normal if tables already exist): {e}"
+            )
             # Continue anyway - assume tables exist
 
     @staticmethod
@@ -52,7 +54,7 @@ class UserService:
                 "username": username,
                 "first_name": first_name,
                 "last_name": last_name,
-            }
+            },
         )
         return user
 
