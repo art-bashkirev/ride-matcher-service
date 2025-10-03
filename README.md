@@ -109,6 +109,10 @@ This project uses Pydantic BaseSettings for configuration management.
 * `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_USERNAME`, `REDIS_PASSWORD` (optional): Fallback Redis parameters used only when `REDIS_URL` is not provided.
 * `MONGODB_URL` (optional): Full MongoDB connection string (including credentials if needed). Takes precedence over the individual host credentials below.
 * `MONGODB_DATABASE`, `MONGODB_STATIONS_COLLECTION`, `MONGODB_SEARCH_RESULTS_COLLECTION` (optional): Override default database/collection names used for station metadata and ride matching state.
+* `AXIOM_DATASET` (optional): Override the dataset name used by the Axiom handler (defaults to `ride-matcher-service`).
+* `AXIOM_TOKEN` (optional): Bearer token passed to the Axiom client. When provided, logging will stream to Axiom using the global handler.
+
+Axiom logging activates automatically whenever `AXIOM_TOKEN` is set (either via environment variable or the SDK’s config resolution).
 
 ### Running (HTTP health + Telegram bot)
 

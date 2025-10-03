@@ -25,6 +25,8 @@ class Config(BaseSettings):
 
     environment: str = Field(default="development")
     log_level: str = Field(default="INFO")
+    axiom_dataset: str = Field(default="ride-matcher-service")
+    axiom_token: str | None = Field(default=None)
 
     # HTTP server (aiohttp) config
     http_host: str = Field(default="0.0.0.0")

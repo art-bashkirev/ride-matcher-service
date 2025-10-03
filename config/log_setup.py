@@ -2,7 +2,11 @@ import logging
 import sys
 from typing import Optional
 
+from axiom_py import Client as AxiomClient  # type: ignore[import-not-found]
+from axiom_py.logging import AxiomHandler  # type: ignore[import-not-found]
+
 from .settings import get_config
+
 
 _LOGGER_CACHE: dict[str, logging.Logger] = {}
 
@@ -22,6 +26,10 @@ def _configure_root_once():
     if not root.handlers:
         root.addHandler(handler)
     root.setLevel(level)
+
+    if cfg.axiom_token:
+        client = AxiomClient(token=cfg.axiom_token)
+        root.addHandler(AxiomHandler(client, cfg.axiom_dataset))
 
     # Suppress httpx logging
     logging.getLogger("httpx").setLevel(logging.WARNING)
