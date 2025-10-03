@@ -1,16 +1,8 @@
-"""Go Back command: Search for trains from destination to base and find matches."""
+"""Intent-aware /goback command registration."""
 
-from telegram import Update
-from telegram.ext import ContextTypes
-
-from .ride_search import search_rides
-
-
-async def goback_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Search for trains from destination station to base and find matches."""
-    await search_rides(update, context, reverse=True)
+from .ride_intent import build_ride_conversation
 
 
 # For registry
 slug = "goback"
-function = goback_command
+function = build_ride_conversation(reverse=True)

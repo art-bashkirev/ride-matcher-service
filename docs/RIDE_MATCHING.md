@@ -7,10 +7,10 @@ The ride matching system allows users to find potential travel companions ("по
 ## Commands
 
 ### `/goto` - Search from Base to Destination
-Searches for trains from the user's base station to destination station within the next 1 hour and finds other users who might take the same train.
+Prompts the user for the desired arrival time (or window) at their destination and searches for matching trains that respect that goal. Any other users with compatible goals for the same thread are surfaced as potential companions.
 
 ### `/goback` - Search from Destination to Base
-Searches for trains from the user's destination station back to base station (reverse direction) within the next 1 hour.
+Prompts for the desired arrival time back at the user's base station and searches in the reverse direction.
 
 ### `/cancelride` - Cancel Active Search
 Cancels the user's active ride matching search and removes their candidate threads from the matching pool.
@@ -22,14 +22,14 @@ Cancels the user's active ride matching search and removes their candidate threa
 When a user runs `/goto` or `/goback`:
 
 1. **Validate User Setup**: Check that the user has configured their base and destination stations via `/setstations`
-2. **Show Loading Message**: Display "⏳ Ищу поезда и попутчиков..."
-3. **Calculate Time Window**: Set the search window to the next 1 hour from now
+2. **Capture Intent**: Prompt the user for their target arrival time or arrival window (e.g. `08:45` or `08:30-09:00`)
+3. **Show Goal-Aware Loading Message**: Display "⏳ Ищу поезда и попутчиков для прибытия в … между …"
 
 ### 2. Fetch Train Schedules
 
 1. **Create Search Request**: Build a search request for the route (base → destination or vice versa)
 2. **Query Yandex API**: Use the cached client to get search results (hits cache if available)
-3. **Filter Trains**: Filter trains to only those departing within the 1-hour window
+3. **Filter Trains**: Filter trains to only those whose arrival time falls inside the requested window
 
 ### 3. Store Candidate Threads
 
@@ -38,10 +38,12 @@ For each train found:
 1. **Extract Thread Info**: Get the thread UID, departure time, arrival time
 2. **Create CandidateThread**: Build a candidate thread object with all relevant information
 3. **Store in MongoDB**: Save all candidate threads to MongoDB with:
-   - User's telegram_id, username, first_name, last_name
-   - From/To station codes and titles
-   - List of candidate threads
-   - TTL of 60 minutes (1 hour) for automatic expiration
+
+    - User's telegram_id, username, first_name, last_name
+    - From/To station codes and titles
+    - List of candidate threads
+    - The captured `UserIntent` (direction, arrival window, tolerance, timezone)
+    - A dynamic TTL aligned with the requested arrival window (goal end time + 60 minutes)
 
 ### 4. Find Matches and Notify Existing Users
 
@@ -55,6 +57,7 @@ The matching algorithm:
 ### 5. Display Results
 
 Show the user:
+
 - How many candidate trains were found
 - If matches exist:
   - Thread information (UID preview, departure time)
@@ -88,6 +91,13 @@ Show the user:
     },
     // ... more threads
   ],
+  intent: {
+    direction: "forward",          // "forward" (/goto) or "reverse" (/goback)
+    arrival_window_start: "2025-01-15T08:30:00+03:00",
+    arrival_window_end: "2025-01-15T09:00:00+03:00",
+    timezone: "Europe/Moscow",
+    tolerance_minutes: 15
+  },
   created_at: ISODate("2025-01-15T08:00:00Z"),
   expires_at: ISODate("2025-01-15T10:30:00Z")  // TTL index on this field
 }
@@ -97,7 +107,7 @@ Show the user:
 
 - `telegram_id` - For quick user lookups
 - `candidate_threads.thread_uid` - For finding matches across users
-- `expires_at` (TTL) - Automatic document expiration after 1 hour
+- `expires_at` (TTL) - Automatic document expiration shortly after the requested arrival window ends
 
 ## Matching Algorithm
 
@@ -114,6 +124,7 @@ User B searches `/goto` and has candidate threads: [T2, T4, T5]
 User C searches `/goback` and has candidate threads: [T2, T6]
 
 Result: All three users are matched on thread T2 because:
+
 - They all have T2 in their candidate threads
 - T2 represents the same physical train
 - The system notifies all three that they may ride together
@@ -132,7 +143,8 @@ All operations are logged comprehensively:
 
 ## Automatic Cleanup
 
-MongoDB's TTL index automatically removes expired search results after 1 hour, ensuring:
+MongoDB's TTL index automatically removes expired search results shortly after the requested arrival window passes, ensuring:
+
 - No stale data accumulates
 - Storage is automatically managed
 - Users see only current matches

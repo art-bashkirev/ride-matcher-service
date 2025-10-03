@@ -2,7 +2,8 @@
 
 import asyncio
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Dict, Any, cast
+from typing import Any, Dict, List, Literal, Optional, cast
+
 from pydantic import BaseModel
 
 from pymongo import AsyncMongoClient
@@ -39,6 +40,7 @@ class UserSearchResults(BaseModel):
     from_station_title: str
     to_station_title: str
     candidate_threads: List[CandidateThread]
+    intent: Optional["UserIntent"] = None
     created_at: datetime
     expires_at: datetime
 
@@ -54,6 +56,16 @@ class ThreadMatch(BaseModel):
 
 
 THREAD_UID_FIELD = "candidate_threads.thread_uid"
+
+
+class UserIntent(BaseModel):
+    """Goal-oriented intent captured from the user before searching."""
+
+    direction: Literal["forward", "reverse"]
+    arrival_window_start: datetime
+    arrival_window_end: datetime
+    timezone: str
+    tolerance_minutes: int | None = None
 
 
 class ThreadMatchingService:
@@ -152,6 +164,7 @@ class ThreadMatchingService:
         from_station_title: str,
         to_station_title: str,
         candidate_threads: List[CandidateThread],
+        intent: "UserIntent",
         ttl_minutes: Optional[int] = None,
     ) -> bool:
         """Store user's search results with candidate threads.
@@ -166,6 +179,7 @@ class ThreadMatchingService:
             from_station_title: From station title
             to_station_title: To station title
             candidate_threads: List of candidate threads
+            intent: User's travel intent with arrival goal
             ttl_minutes: TTL in minutes (default: 60 minutes / 1 hour)
 
         Returns:
@@ -188,6 +202,7 @@ class ThreadMatchingService:
                 from_station_title=from_station_title,
                 to_station_title=to_station_title,
                 candidate_threads=candidate_threads,
+                intent=intent,
                 created_at=now,
                 expires_at=expires_at,
             )

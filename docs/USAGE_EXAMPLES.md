@@ -4,7 +4,7 @@
 
 ### Step 1: Configure Stations (One-time Setup)
 
-```
+```text
 User: /setstations
 
 Bot: 🚂 Мастер настройки станций
@@ -45,26 +45,34 @@ Bot: 🎉 Станции успешно сохранены!
 
 #### Scenario A: Going to Work/Destination
 
-```
+```text
 User: /goto
 
-Bot: ⏳ Ищу поезда и попутчиков...
+Bot: ❓ Когда вы хотите прибыть в Tsaritsyno?
+
+User: 08:30-09:00
+
+Bot: ⏳ Ищу поезда и попутчиков для прибытия в Tsaritsyno между 08:30 и 09:00...
 
 Bot: ✅ Поиск завершен!
-     Найдено 8 поездов в ближайший час.
+     Найдено 8 поездов для прибытия между 08:30 и 09:00.
      
      Пока попутчиков не найдено. Мы уведомим вас, когда кто-то найдется!
 ```
 
 #### Scenario B: Finding Matches
 
-```
+```text
 User: /goto
 
-Bot: ⏳ Ищу поезда и попутчиков...
+Bot: ❓ Когда вы хотите прибыть в Tsaritsyno?
+
+User: 08:30-09:00
+
+Bot: ⏳ Ищу поезда и попутчиков для прибытия в Tsaritsyno между 08:30 и 09:00...
 
 Bot: ✅ Поиск завершен!
-     Найдено 8 поездов в ближайший час.
+     Найдено 8 поездов для прибытия между 08:30 и 09:00.
      
      🎉 Найдены попутчики!
      
@@ -78,13 +86,17 @@ Bot: ✅ Поиск завершен!
 
 #### Scenario C: Going Back Home
 
-```
+```text
 User: /goback
 
-Bot: ⏳ Ищу поезда и попутчиков...
+Bot: ❓ Когда вы хотите прибыть в Podolsk?
+
+User: 19:00
+
+Bot: ⏳ Ищу поезда и попутчиков для прибытия в Podolsk между 18:45 и 19:15...
 
 Bot: ✅ Поиск завершен!
-     Найдено 6 поездов в ближайший час.
+     Найдено 6 поездов для прибытия между 18:45 и 19:15.
      
      🎉 Найдены попутчики!
      
@@ -96,7 +108,7 @@ Bot: ✅ Поиск завершен!
 
 ### Step 3: Cancel Search (Optional)
 
-```
+```text
 User: /cancelride
 
 Bot: ✅ Ваш поиск попутчиков отменен.
@@ -104,7 +116,7 @@ Bot: ✅ Ваш поиск попутчиков отменен.
 
 Or if no active search:
 
-```
+```text
 User: /cancelride
 
 Bot: У вас нет активных поисков попутчиков.
@@ -117,20 +129,23 @@ Bot: У вас нет активных поисков попутчиков.
 ### Scenario 1: Morning Commute
 
 **8:00 AM - Alice searches**
-```
+
+```text
 Alice: /goto
 Bot: Found 12 trains, no matches yet
 ```
 
 **8:05 AM - Bob searches**
-```
+
+```text
 Bob: /goto
 Bot: Found 10 trains
      🎉 Match: Train at 08:45 with Alice!
 ```
 
 **8:10 AM - Charlie searches**
-```
+
+```text
 Charlie: /goto
 Bot: Found 11 trains
      🎉 Matches:
@@ -145,7 +160,8 @@ Now Alice and Bob see Charlie when they search again!
 ### Scenario 2: Evening Commute (Reverse Direction)
 
 **17:00 PM - Users search to go home**
-```
+
+```text
 Alice: /goback    (Tsaritsyno → Podolsk)
 Bob: /goback      (Tsaritsyno → Silikatnaya)
 Charlie: /goback  (Tekstilschiki → Podolsk)
@@ -158,19 +174,22 @@ Even though they have different stations, they match on trains that serve all th
 ### Scenario 3: Cancellation
 
 **8:00 AM - Alice searches**
-```
+
+```text
 Alice: /goto
 Bot: Found 10 trains, matches with Bob & Charlie on train at 08:45
 ```
 
 **8:15 AM - Bob cancels**
-```
+
+```text
 Bob: /cancelride
 Bot: Search cancelled
 ```
 
 **8:20 AM - Alice searches again**
-```
+
+```text
 Alice: /goto
 Bot: Found 10 trains, matches with Charlie on train at 08:45
      (Bob no longer shown - he cancelled)
@@ -181,19 +200,22 @@ Bot: Found 10 trains, matches with Charlie on train at 08:45
 ### Scenario 4: Automatic Expiration
 
 **8:00 AM - Alice searches**
-```
+
+```text
 Alice: /goto
-Bot: Stored search with TTL: 1 hour
+Bot: Stored search with TTL until 60 minutes after the requested arrival window
 ```
 
 **10:30 AM - TTL expires**
-```
+
+```text
 MongoDB automatically deletes Alice's search
 Alice no longer appears in other users' matches
 ```
 
 **10:35 AM - Bob searches**
-```
+
+```text
 Bob: /goto
 Bot: Found matches, but Alice not included (her search expired)
 ```
@@ -203,22 +225,29 @@ Bot: Found matches, but Alice not included (her search expired)
 ## Edge Cases
 
 ### Case 1: No Stations Configured
-```
+
+```text
 User: /goto
 Bot: ⚠️ Сначала установите станции с помощью /setstations!
 ```
 
 ### Case 2: No Trains in Time Window
-```
+
+```text
 User: /goto
-Bot: ⏳ Ищу поезда и попутчиков...
-Bot: ❌ Поездов не найдено в ближайший час.
+Bot: ❓ Когда вы хотите прибыть в Tsaritsyno?
+User: 05:00
+Bot: ⏳ Ищу поезда и попутчиков для прибытия в Tsaritsyno между 04:45 и 05:15...
+Bot: ❌ Поездов не найдено для прибытия между 04:45 и 05:15.
 ```
 
 ### Case 3: API Error
-```
+
+```text
 User: /goto
-Bot: ⏳ Ищу поезда и попутчиков...
+Bot: ❓ Когда вы хотите прибыть в Tsaritsyno?
+User: 08:00
+Bot: ⏳ Ищу поезда и попутчиков для прибытия в Tsaritsyno между 07:45 и 08:15...
 Bot: ❌ Не удалось выполнить поиск. Попробуйте позже.
 ```
 
@@ -228,17 +257,17 @@ Bot: ❌ Не удалось выполнить поиск. Попробуйте
 
 ### /goto
 **Purpose**: Search for trains from your base station to destination  
-**Time Window**: Next 1 hour from now  
+**Arrival Window**: Whatever time or range you request (e.g. 08:30-09:00)  
 **Caching**: Uses cached schedule data when available  
 **Matching**: Finds other users with same train threads  
-**Storage**: Saves results for 1 hour with TTL  
+**Storage**: Saves results until shortly after the requested arrival window  
 
 ### /goback
 **Purpose**: Search for trains from your destination back to base (reverse)  
-**Time Window**: Next 1 hour from now  
+**Arrival Window**: Whatever time or range you request for getting back home  
 **Caching**: Uses cached schedule data when available  
 **Matching**: Finds other users with same train threads  
-**Storage**: Saves results for 1 hour with TTL  
+**Storage**: Saves results until shortly after the requested arrival window  
 
 ### /cancelride
 **Purpose**: Cancel your active ride search  
@@ -249,41 +278,41 @@ Bot: ❌ Не удалось выполнить поиск. Попробуйте
 
 ## Tips
 
-1. **Search Multiple Times**: 
-   - Search periodically to see new matches
-   - Other users may join after your initial search
+1. **Search Multiple Times:**
+     - Search periodically to see new matches
+     - Other users may join after your initial search
 
-2. **Use Both Directions**:
-   - Use `/goto` in the morning
-   - Use `/goback` in the evening
+2. **Use Both Directions:**
+     - Use `/goto` when heading out
+     - Use `/goback` when planning the return trip
 
-3. **Plan Ahead**:
-   - Search window is 1 hour
-   - Search when you're ready to commit to a time range
+3. **Plan Ahead:**
+     - Provide the arrival window you actually need
+     - Try wider ranges (e.g. `08:20-08:50`) to see more options
 
-4. **Cancel When Plans Change**:
-   - Use `/cancelride` if your plans change
-   - Prevents other users from seeing outdated matches
+4. **Cancel When Plans Change:**
+     - Use `/cancelride` if your plans change
+     - Prevents other users from seeing outdated matches
 
-5. **Check Your Profile**:
-   - Use `/profile` to verify your stations
-   - Update with `/setstations` if needed
+5. **Check Your Profile:**
+     - Use `/profile` to verify your stations
+     - Update with `/setstations` if needed
 
 ---
 
 ## Troubleshooting
 
 **Q: Why don't I see any matches?**  
-A: No other users have searched for trains that overlap with yours in the same time window.
+A: No other users have a matching train within your requested arrival window yet.
 
 **Q: Can I match with users going to different destinations?**  
 A: Yes! The system matches by train thread, not destination. If two users take the same physical train (even to different stops), they'll match.
 
 **Q: How long do matches last?**  
-A: Matches expire after 1 hour automatically via MongoDB TTL.
+A: Matches stay active until shortly after the requested arrival window finishes.
 
 **Q: Can I search for multiple time windows?**  
-A: Each search replaces your previous search. The system always shows trains for the next 1 hour from when you search.
+A: Each search replaces your previous search. Provide the arrival window you care about each time.
 
 **Q: What if I need to change my stations?**  
 A: Currently, station updates are restricted after initial setup. Contact an admin for changes.

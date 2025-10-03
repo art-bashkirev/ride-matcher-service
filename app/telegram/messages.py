@@ -189,11 +189,14 @@ MESSAGES = {
     # Ride Matching messages
     "ride_search_title": f"{EMOJIS['train']} **Поиск попутчиков**",
     "ride_search_searching": f"{EMOJIS['loading']} Ищу поезда и попутчиков...",
+    "ride_search_searching_goal": f"{EMOJIS['loading']} Ищу поезда и попутчиков для прибытия в {{station}} между {{start}} и {{end}}...",
     "ride_search_no_stations": "⚠️ Сначала установите станции с помощью /setstations!",
     "ride_search_error": f"{EMOJIS['error']} Не удалось выполнить поиск. Попробуйте позже.",
     "ride_search_no_trains": f"{EMOJIS['error']} Поездов не найдено в ближайший час.",
+    "ride_search_no_trains_window": f"{EMOJIS['error']} Поездов не найдено для прибытия между {{start}} и {{end}}.",
     "ride_search_success": f"{EMOJIS['success']} **Поиск завершен!**",
     "ride_search_found_trains": "Найдено {count} поездов в ближайший час.",
+    "ride_search_found_trains_window": "Найдено {count} поездов для прибытия между {start} и {end}.",
     "ride_search_matches_found": f"{EMOJIS['celebration']} **Найдены попутчики!**",
     "ride_search_no_matches": "Пока попутчиков не найдено. Мы уведомим вас, когда кто-то найдется!",
     "ride_search_match_thread": "🚂 **Поезд:** {thread_title} (отправление: {departure})",
@@ -203,6 +206,9 @@ MESSAGES = {
     "ride_cancel_nothing": "У вас нет активных поисков попутчиков.",
     "ride_new_match": f"{EMOJIS['celebration']} **Новый попутчик найден!**",
     "ride_new_match_details": "🚂 Поезд: {thread_title}\n⏰ Отправление: {departure}\n👤 Попутчик: {name}\n📍 Маршрут: {from_} → {to}",
+    "ride_intent_prompt": f"{EMOJIS['question']} **Когда вы хотите прибыть в {EMOJIS['target']} {{station}}?**\nВведите время, например `08:45` или `08:30-09:00`.",
+    "ride_intent_unknown_station": "вашу станцию",
+    "ride_intent_invalid_time": "Не удалось распознать время. Используйте формат `HH:MM` или диапазон `HH:MM-HH:MM`.",
 }
 
 
