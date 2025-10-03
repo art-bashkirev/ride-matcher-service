@@ -140,37 +140,49 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
 
             db_user = await UserService.get_user(telegram_id)
-            if (
-                not db_user
-                or not db_user.base_station_code
-                or not db_user.destination_code
-            ):
-                if button_action not in [
-                    "cancelride"
-                ]:  # cancelride doesn't need stations
+
+            if db_user is None:
+                if button_action != "cancelride":
                     await update.message.reply_text(
                         get_message("echo_set_stations_first")
                     )
-                    return
+                else:
+                    await update.message.reply_text(get_message("error_generic"))
+                return
+
+            base_station_code = db_user.base_station_code or ""
+            destination_station_code = db_user.destination_code or ""
+
+            if (not base_station_code or not destination_station_code) and (
+                button_action != "cancelride"
+            ):
+                await update.message.reply_text(get_message("echo_set_stations_first"))
+                return
 
             # Trigger appropriate command
-            if button_action == "schedule_base":
-                station_code = db_user.base_station_code
-                from app.telegram.handlers.commands.schedule import (
-                    function as schedule_function,
+            if button_action in ("schedule_base", "schedule_dest"):
+                from app.telegram.handlers.commands.route_schedule import (
+                    send_route_schedule,
                 )
 
-                context.args = [station_code]
-                await schedule_function(update, context)
-                return
-            elif button_action == "schedule_dest":
-                station_code = db_user.destination_code
-                from app.telegram.handlers.commands.schedule import (
-                    function as schedule_function,
-                )
-
-                context.args = [station_code]
-                await schedule_function(update, context)
+                if button_action == "schedule_base":
+                    await send_route_schedule(
+                        update,
+                        context,
+                        from_code=base_station_code,
+                        to_code=destination_station_code,
+                        from_title=db_user.base_station_title,
+                        to_title=db_user.destination_title,
+                    )
+                else:
+                    await send_route_schedule(
+                        update,
+                        context,
+                        from_code=destination_station_code,
+                        to_code=base_station_code,
+                        from_title=db_user.destination_title,
+                        to_title=db_user.base_station_title,
+                    )
                 return
             elif button_action == "goto":
                 from app.telegram.handlers.commands.goto import goto_command

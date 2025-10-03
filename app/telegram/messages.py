@@ -154,8 +154,8 @@ MESSAGES = {
     "error_check_station_id": "• Проверьте ID станции",
     "error_contact_support": "• Обратитесь в поддержку при необходимости",
     # Keyboard buttons
-    "keyboard_schedule_base": f"{EMOJIS['home']} Моё расписание",
-    "keyboard_schedule_dest": f"{EMOJIS['target']} Расписание до пункта назначения",
+    "keyboard_schedule_base": f"{EMOJIS['home']} Поезда: база → пункт",
+    "keyboard_schedule_dest": f"{EMOJIS['target']} Поезда: пункт → база",
     "keyboard_goto": "🚂 Найти попутчиков (туда)",
     "keyboard_goback": "🔙 Найти попутчиков (обратно)",
     "keyboard_cancelride": "❌ Отменить поиск",
@@ -209,6 +209,15 @@ MESSAGES = {
     "ride_intent_prompt": f"{EMOJIS['question']} **Когда вы хотите прибыть в {EMOJIS['target']} {{station}}?**\nВведите время, например `08:45` или `08:30-09:00`.",
     "ride_intent_unknown_station": "вашу станцию",
     "ride_intent_invalid_time": "Не удалось распознать время. Используйте формат `HH:MM` или диапазон `HH:MM-HH:MM`.",
+    # Route schedule previews
+    "route_schedule_title": f"{EMOJIS['train']} **Маршрут:** {{from_station}} → {{to_station}}",
+    "route_schedule_updated": "⏱️ Обновлено: {time}",
+    "route_schedule_list_header": f"{EMOJIS['schedule']} Ближайшие отправления ({{date}})",
+    "route_schedule_item": "• {departure} → {arrival} — {train}",
+    "route_schedule_more": "… и ещё {count}",
+    "route_schedule_no_results": f"{EMOJIS['error']} Нет ближайших прямых поездов по маршруту {{from_station}} → {{to_station}}.",
+    "route_schedule_data_source_cache": "💾 Данные из кэша",
+    "route_schedule_data_source_api": "🌐 Свежие данные из API",
 }
 
 
