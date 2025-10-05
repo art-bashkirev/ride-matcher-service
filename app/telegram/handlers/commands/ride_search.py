@@ -279,7 +279,7 @@ async def search_rides(
             "",
         ]
 
-        response_lines.append("🚂 **Доступные поезда:**")
+        response_lines.append("🚂 *Доступные поезда:*")
         for thread in candidate_threads[:10]:
             departure_dt = datetime.fromisoformat(thread.departure_time).astimezone(
                 timezone
@@ -293,7 +293,7 @@ async def search_rides(
 
         if len(candidate_threads) > 10:
             response_lines.append(
-                f"  ... и ещё {len(candidate_threads) - 10}"
+                f"  \\.\\.\\.  и ещё {len(candidate_threads) - 10}"
             )
 
         if matches:

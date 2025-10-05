@@ -39,9 +39,9 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         full_name = db_user.first_name
         if db_user.last_name:
             full_name += f" {db_user.last_name}"
-        mention = f'<a href="tg://user?id={telegram_id}">{full_name}</a>'
+        mention = f'[{full_name}](tg://user?id={telegram_id})'
     elif user:
-        mention = user.mention_html()
+        mention = user.mention_markdown_v2()
     else:
         mention = "there"
 
@@ -77,7 +77,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         use_menu = get_message("start_use_menu")
 
-        await update.message.reply_html(
+        await update.message.reply_text(
             f"{welcome}\n\n"
             f"{greeting}\n\n"
             f"{base_station}\n"
@@ -92,7 +92,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         help_instruction = get_message("start_help_instruction")
         please_set_stations = get_message("start_please_set_stations")
 
-        await update.message.reply_html(
+        await update.message.reply_text(
             f"{welcome}\n\n"
             f"{greeting}\n\n"
             f"{get_started}\n"

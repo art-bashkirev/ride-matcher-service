@@ -123,8 +123,9 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if schedule_response.station and schedule_response.station.title:
             station_type_suffix = ""
             if schedule_response.station.station_type_name:
+                # Escape parentheses for MarkdownV2
                 station_type_suffix = (
-                    f" ({schedule_response.station.station_type_name})"
+                    f" \\({schedule_response.station.station_type_name}\\)"
                 )
             station_info = get_message(
                 "schedule_station_info",

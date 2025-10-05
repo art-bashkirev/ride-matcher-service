@@ -16,7 +16,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message is None:
         return
     user = update.effective_user
-    mention = user.mention_html() if user else "there"
+    mention = user.mention_markdown_v2() if user else "there"
     logger.info("User %s requested stats", user.username if user else "unknown")
 
     async with CachedYandexSchedules() as client:
@@ -32,6 +32,6 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"{title}\n" f"{separator}\n\n" f"{intro}\n\n" f"{stats_body}\n\n" f"{tip}"
     )
 
-    await update.message.reply_html(
+    await update.message.reply_text(
         message_text, reply_markup=ForceReply(selective=True)
     )
