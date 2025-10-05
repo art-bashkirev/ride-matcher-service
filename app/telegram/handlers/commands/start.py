@@ -2,6 +2,7 @@ from telegram import Update, ForceReply, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes
 
 from app.telegram.messages import get_message
+from app.telegram.utils import escape_markdown_v2
 from config.log_setup import get_logger
 from services.database.user_service import UserService
 
@@ -39,7 +40,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         full_name = db_user.first_name
         if db_user.last_name:
             full_name += f" {db_user.last_name}"
-        mention = f'[{full_name}](tg://user?id={telegram_id})'
+        mention = f'[{escape_markdown_v2(full_name)}](tg://user?id={telegram_id})'
     elif user:
         mention = user.mention_markdown_v2()
     else:
@@ -70,10 +71,10 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         greeting = get_message("start_greeting_with_stations", mention=mention)
         base_station = get_message(
-            "start_your_base_station", base_station=db_user.base_station_title
+            "start_your_base_station", base_station=escape_markdown_v2(db_user.base_station_title)
         )
         destination = get_message(
-            "start_your_destination", destination=db_user.destination_title
+            "start_your_destination", destination=escape_markdown_v2(db_user.destination_title)
         )
         use_menu = get_message("start_use_menu")
 

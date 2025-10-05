@@ -17,6 +17,7 @@ from telegram.ext import (
 )
 
 from app.telegram.messages import get_message
+from app.telegram.utils import escape_markdown_v2
 from config.log_setup import get_logger
 from config.settings import get_config
 from services.database.user_service import UserService
@@ -88,7 +89,7 @@ def build_ride_conversation(reverse: bool) -> ConversationHandler:
         await update.message.reply_text(
             get_message(
                 "ride_intent_prompt",
-                station=arrival_station or get_message("ride_intent_unknown_station"),
+                station=escape_markdown_v2(arrival_station) if arrival_station else get_message("ride_intent_unknown_station"),
             )
         )
         return ASKING_ARRIVAL

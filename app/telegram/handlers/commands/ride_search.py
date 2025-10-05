@@ -8,6 +8,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.telegram.messages import get_message
+from app.telegram.utils import escape_markdown_v2
 from config.log_setup import get_logger
 from config.settings import get_config
 from services.mongodb.thread_matching_service import (
@@ -93,7 +94,7 @@ async def search_rides(
     searching_msg = await update.message.reply_text(
         get_message(
             "ride_search_searching_goal",
-            station=to_title or get_message("ride_intent_unknown_station"),
+            station=escape_markdown_v2(to_title) if to_title else get_message("ride_intent_unknown_station"),
             start=start_local.strftime("%H:%M"),
             end=end_local.strftime("%H:%M"),
         )
@@ -244,11 +245,11 @@ async def search_rides(
                         f"{get_message('ride_new_match')}\n\n"
                         f"{get_message(
                             'ride_new_match_details',
-                            thread_title='совпадающий маршрут',
+                            thread_title=escape_markdown_v2('совпадающий маршрут'),
                             departure='см. ваш поиск',
-                            name=user_info['new_user_name'],
-                            from_=user_info['new_user_from_title'],
-                            to=user_info['new_user_to_title'],
+                            name=escape_markdown_v2(user_info['new_user_name']),
+                            from_=escape_markdown_v2(user_info['new_user_from_title']),
+                            to=escape_markdown_v2(user_info['new_user_to_title']),
                         )}"
                     )
                     await context.bot.send_message(
@@ -316,7 +317,7 @@ async def search_rides(
                 response_lines.append(
                     get_message(
                         "ride_search_match_thread",
-                        thread_title=thread_uid[:8] + "...",
+                        thread_title=escape_markdown_v2(thread_uid[:8] + "..."),
                         departure=departure_str,
                     )
                 )
@@ -338,9 +339,9 @@ async def search_rides(
                     response_lines.append(
                         get_message(
                             "ride_search_match_user",
-                            name=name,
-                            from_=matched_user.get("from_station_title", "?"),
-                            to=matched_user.get("to_station_title", "?"),
+                            name=escape_markdown_v2(name),
+                            from_=escape_markdown_v2(matched_user.get("from_station_title", "?")),
+                            to=escape_markdown_v2(matched_user.get("to_station_title", "?")),
                         )
                     )
         else:
