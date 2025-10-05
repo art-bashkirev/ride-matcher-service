@@ -8,6 +8,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.telegram.messages import get_message
+from app.telegram.utils import escape_markdown_v2
 from config.log_setup import get_logger
 from config.settings import get_config
 from services.yandex_schedules.cached_client import CachedYandexSchedules
@@ -25,22 +26,6 @@ class RouteSegment:
 
 _MAX_RESULTS_TO_SHOW = 8
 _PAST_DEPARTURE_GRACE_MINUTES = 5
-
-
-def _escape_markdown(text: str) -> str:
-    """Escape Telegram Markdown special characters for v1 format."""
-    if not text:
-        return ""
-
-    return (
-        text.replace("_", "\\_")
-        .replace("*", "\\*")
-        .replace("[", "\\[")
-        .replace("]", "\\]")
-        .replace("(", "\\(")
-        .replace(")", "\\)")
-        .replace("`", "\\`")
-    )
 
 
 def _format_station(title: str | None, code: str) -> str:
@@ -136,8 +121,8 @@ async def send_route_schedule(
         segments, timezone=timezone, now_local=now_local
     )
 
-    pretty_from = _escape_markdown(_format_station(from_title, from_code))
-    pretty_to = _escape_markdown(_format_station(to_title, to_code))
+    pretty_from = escape_markdown_v2(_format_station(from_title, from_code))
+    pretty_to = escape_markdown_v2(_format_station(to_title, to_code))
 
     if not normalised_segments:
         await loading_message.edit_text(

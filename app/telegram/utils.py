@@ -8,6 +8,29 @@ from services.yandex_schedules.models.schedule import Schedule
 from .messages import get_message
 
 
+def escape_markdown_v2(text: str) -> str:
+    """Escape special characters for Telegram MarkdownV2 format.
+    
+    MarkdownV2 requires escaping these characters when they appear as literal text:
+    _ * [ ] ( ) ~ ` > # + - = | { } . !
+    
+    Args:
+        text: Text to escape
+        
+    Returns:
+        Escaped text safe for MarkdownV2
+    """
+    if not text:
+        return ""
+    
+    # Escape all MarkdownV2 special characters
+    special_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    result = text
+    for char in special_chars:
+        result = result.replace(char, f"\\{char}")
+    return result
+
+
 def is_valid_station_id(text: str) -> bool:
     """Validate message format: s followed by exactly 7 digits."""
     return bool(re.match(r"^s\d{7}$", text))
@@ -80,7 +103,6 @@ def format_schedule_reply(
         )
         date_info = f"📅 *Дата:* {date}"
         error_msg = "❌ Запланированные отправления не найдены"
-        suggestions = get_message("schedule_no_departures_suggestions")
 
         return f"{header}\n{separator}\n\n{station_info}\n{date_info}\n\n{error_msg}\n\n{suggestions}"
 
@@ -161,18 +183,18 @@ def format_schedule_reply(
         if schedule_item.thread:
             # Prefer number over title for trains, but show title for others
             if schedule_item.thread.number:
-                thread_info = f"{schedule_item.thread.number}"
+                thread_info = escape_markdown_v2(schedule_item.thread.number)
                 if schedule_item.thread.title:
-                    # Add full title without shortening
-                    thread_info += f" - {schedule_item.thread.title}"
+                    # Add full title without shortening - escape hyphen for MarkdownV2
+                    thread_info += f" \\- {escape_markdown_v2(schedule_item.thread.title)}"
             else:
-                thread_info = schedule_item.thread.title or "Unknown"
+                thread_info = escape_markdown_v2(schedule_item.thread.title) if schedule_item.thread.title else "Unknown"
 
         # Format platform information
         platform_info = ""
         if schedule_item.platform:
             platform_text = get_message("schedule_platform")
-            platform_info = f"  🚉 {platform_text} {schedule_item.platform}"
+            platform_info = f"  🚉 {platform_text} {escape_markdown_v2(schedule_item.platform)}"
 
         # Enhanced formatting with better structure and spacing
         reply_text += f"🚂 {thread_info}\n"
@@ -181,9 +203,11 @@ def format_schedule_reply(
         # Add stops information if available and not too long
         if schedule_item.stops and len(schedule_item.stops) < 50:
             stops_text = get_message("schedule_stops")
-            reply_text += f"📍 {stops_text}: {schedule_item.stops}\n"
+            # Escape colon for MarkdownV2
+            reply_text += f"📍 {stops_text}\\: {escape_markdown_v2(schedule_item.stops)}\n"
 
         # Add visual separator between entries for better readability
+        # Escape dashes for MarkdownV2
         reply_text += "─" * 25 + "\n\n"
 
     return reply_text.strip()
