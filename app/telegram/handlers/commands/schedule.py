@@ -9,6 +9,7 @@ from app.telegram.utils import (
     filter_upcoming_departures,
     paginate_schedule,
     create_pagination_keyboard,
+    escape_markdown_v2,
 )
 from app.telegram.messages import get_message
 from config.log_setup import get_logger
@@ -123,13 +124,12 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if schedule_response.station and schedule_response.station.title:
             station_type_suffix = ""
             if schedule_response.station.station_type_name:
-                # Escape parentheses for MarkdownV2
-                station_type_suffix = (
-                    f" \\({schedule_response.station.station_type_name}\\)"
-                )
+                # Escape station type name and parentheses for MarkdownV2
+                escaped_type = escape_markdown_v2(schedule_response.station.station_type_name)
+                station_type_suffix = f" \\({escaped_type}\\)"
             station_info = get_message(
                 "schedule_station_info",
-                title=schedule_response.station.title,
+                title=escape_markdown_v2(schedule_response.station.title),
                 station_type=station_type_suffix,
             )
             final_text = final_text.replace(

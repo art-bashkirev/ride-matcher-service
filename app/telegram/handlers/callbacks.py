@@ -86,10 +86,11 @@ async def _fetch_and_format_schedule(
     if schedule_response.station and schedule_response.station.title:
         station_type_suffix = ""
         if schedule_response.station.station_type_name:
-            station_type_suffix = f" ({schedule_response.station.station_type_name})"
+            escaped_type = escape_markdown_v2(schedule_response.station.station_type_name)
+            station_type_suffix = f" \\({escaped_type}\\)"
         station_info = get_message(
             "schedule_station_info",
-            title=schedule_response.station.title,
+            title=escape_markdown_v2(schedule_response.station.title),
             station_type=station_type_suffix,
         )
         final_text = final_text.replace(
