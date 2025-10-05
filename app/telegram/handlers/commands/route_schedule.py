@@ -62,7 +62,7 @@ def _normalise_segments(
             RouteSegment(
                 departure=departure_dt,
                 arrival=arrival_dt,
-                train_label=_escape_markdown(train_label),
+                train_label=escape_markdown_v2(train_label),
             )
         )
 
