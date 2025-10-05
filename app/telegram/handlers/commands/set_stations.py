@@ -16,6 +16,7 @@ from config.log_setup import get_logger
 from services.database.user_service import UserService
 from services.mongodb.stations_service import get_stations_service
 from app.telegram.messages import get_message
+from app.telegram.utils import escape_markdown_v2
 
 logger = get_logger(__name__)
 
@@ -87,8 +88,8 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text(
                 get_message(
                     "setstations_destination_pending",
-                    base_title=base_title,
-                    base_code=base_code,
+                    base_title=escape_markdown_v2(base_title),
+                    base_code=escape_markdown_v2(base_code),
                 )
             )
             return CHOOSING_DEST
@@ -108,8 +109,8 @@ async def start_set_stations(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text(
                 get_message(
                     "setstations_base_pending",
-                    dest_title=dest_title,
-                    dest_code=dest_code,
+                    dest_title=escape_markdown_v2(dest_title),
+                    dest_code=escape_markdown_v2(dest_code),
                 )
             )
             return CHOOSING_BASE
@@ -179,7 +180,7 @@ async def handle_base_station(
             query,
         )
         await update.message.reply_text(
-            get_message("setstations_no_stations_found", query=query)
+            get_message("setstations_no_stations_found", query=escape_markdown_v2(query))
         )
         return CHOOSING_BASE
 
@@ -294,9 +295,9 @@ async def handle_station_selection(
                 f"{get_message('setstations_confirm_title')}\n"
                 f"{separator}\n\n"
                 f"{get_message('setstations_base_station_section')}\n"
-                f"{get_message('setstations_station_summary', title=station_details['title'], code=station_details['code'], settlement=station_details['settlement'], location_label=location_label)}\n\n"
+                f"{get_message('setstations_station_summary', title=escape_markdown_v2(station_details['title']), code=escape_markdown_v2(station_details['code']), settlement=escape_markdown_v2(station_details['settlement']), location_label=location_label)}\n\n"
                 f"{get_message('setstations_destination_section')}\n"
-                f"{get_message('setstations_station_summary', title=dest_details['title'], code=dest_details['code'], settlement=dest_details['settlement'], location_label=location_label)}\n\n"
+                f"{get_message('setstations_station_summary', title=escape_markdown_v2(dest_details['title']), code=escape_markdown_v2(dest_details['code']), settlement=escape_markdown_v2(dest_details['settlement']), location_label=location_label)}\n\n"
                 f"{get_message('setstations_confirm_question')}"
             )
             await query.edit_message_text(confirmation_text, reply_markup=reply_markup)
@@ -304,9 +305,9 @@ async def handle_station_selection(
 
         base_summary = get_message(
             "setstations_station_summary",
-            title=station_details["title"],
-            code=station_details["code"],
-            settlement=station_details["settlement"],
+            title=escape_markdown_v2(station_details["title"]),
+            code=escape_markdown_v2(station_details["code"]),
+            settlement=escape_markdown_v2(station_details["settlement"]),
             location_label=location_label,
         )
         message_text = (
@@ -359,9 +360,9 @@ async def handle_station_selection(
             f"{get_message('setstations_confirm_title')}\n"
             f"{separator}\n\n"
             f"{get_message('setstations_base_station_section')}\n"
-            f"{get_message('setstations_station_summary', title=base_details['title'], code=base_details['code'], settlement=base_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_station_summary', title=escape_markdown_v2(base_details['title']), code=escape_markdown_v2(base_details['code']), settlement=escape_markdown_v2(base_details['settlement']), location_label=location_label)}\n\n"
             f"{get_message('setstations_destination_section')}\n"
-            f"{get_message('setstations_station_summary', title=dest_details['title'], code=dest_details['code'], settlement=dest_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_station_summary', title=escape_markdown_v2(dest_details['title']), code=escape_markdown_v2(dest_details['code']), settlement=escape_markdown_v2(dest_details['settlement']), location_label=location_label)}\n\n"
             f"{get_message('setstations_confirm_question')}"
         )
         await query.edit_message_text(confirmation_text, reply_markup=reply_markup)
@@ -414,7 +415,7 @@ async def handle_destination_station(
             query,
         )
         await update.message.reply_text(
-            get_message("setstations_no_stations_found", query=query)
+            get_message("setstations_no_stations_found", query=escape_markdown_v2(query))
         )
         return CHOOSING_DEST
 
@@ -536,9 +537,9 @@ async def handle_confirmation(
             f"{get_message('setstations_success_title')}\n"
             f"{separator}\n\n"
             f"{get_message('setstations_base_station_section')}\n"
-            f"{get_message('setstations_station_summary', title=base_details['title'], code=base_details['code'], settlement=base_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_station_summary', title=escape_markdown_v2(base_details['title']), code=escape_markdown_v2(base_details['code']), settlement=escape_markdown_v2(base_details['settlement']), location_label=location_label)}\n\n"
             f"{get_message('setstations_destination_section')}\n"
-            f"{get_message('setstations_station_summary', title=dest_details['title'], code=dest_details['code'], settlement=dest_details['settlement'], location_label=location_label)}\n\n"
+            f"{get_message('setstations_station_summary', title=escape_markdown_v2(dest_details['title']), code=escape_markdown_v2(dest_details['code']), settlement=escape_markdown_v2(dest_details['settlement']), location_label=location_label)}\n\n"
             f"{get_message('setstations_success_message')}"
         )
         await query.edit_message_text(success_text)

@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 
 from config.log_setup import get_logger
 from app.telegram.messages import get_message
+from app.telegram.utils import escape_markdown_v2
 
 from services.yandex_schedules.cached_client import CachedYandexSchedules
 
@@ -25,7 +26,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     title = get_message("stats_title")
     separator = get_message("separator")
     intro = get_message("stats_intro", mention=mention)
-    stats_body = get_message("stats_message", stats=stats)
+    stats_body = get_message("stats_message", stats=escape_markdown_v2(str(stats)))
     tip = get_message("stats_tip")
 
     message_text = (
