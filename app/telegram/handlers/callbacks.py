@@ -12,6 +12,7 @@ from app.telegram.utils import (
     filter_upcoming_departures,
     paginate_schedule,
     create_pagination_keyboard,
+    escape_markdown_v2,
 )
 from app.telegram.messages import get_message
 from config.log_setup import get_logger
@@ -63,11 +64,11 @@ async def _fetch_and_format_schedule(
     if not paginated_items:
         if page == 1:
             error_message = get_message(
-                "schedule_no_upcoming_departures", station_id=station_id, date=today
+                "schedule_no_upcoming_departures", station_id=escape_markdown_v2(station_id), date=today
             )
         else:
             error_message = get_message(
-                "schedule_no_departures_generic", station_id=station_id, date=today
+                "schedule_no_departures_generic", station_id=escape_markdown_v2(station_id), date=today
             )
         raise ValueError(error_message)
 
