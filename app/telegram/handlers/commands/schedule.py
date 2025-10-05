@@ -55,7 +55,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_valid_station_id(station_id):
         # Use messages for error messages
         error_title = get_message("schedule_error_invalid_format")
-        you_entered = get_message("schedule_error_you_entered", station_id=station_id)
+        you_entered = get_message("schedule_error_you_entered", station_id=escape_markdown_v2(station_id))
         expected_format = get_message("schedule_error_expected_format")
         try_again = get_message("schedule_error_try_again")
         separator = get_message("separator")

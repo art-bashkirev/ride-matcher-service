@@ -64,11 +64,11 @@ async def _fetch_and_format_schedule(
     if not paginated_items:
         if page == 1:
             error_message = get_message(
-                "schedule_no_upcoming_departures", station_id=escape_markdown_v2(station_id), date=today
+                "schedule_no_upcoming_departures", station_id=escape_markdown_v2(station_id), date=escape_markdown_v2(today)
             )
         else:
             error_message = get_message(
-                "schedule_no_departures_generic", station_id=escape_markdown_v2(station_id), date=today
+                "schedule_no_departures_generic", station_id=escape_markdown_v2(station_id), date=escape_markdown_v2(today)
             )
         raise ValueError(error_message)
 

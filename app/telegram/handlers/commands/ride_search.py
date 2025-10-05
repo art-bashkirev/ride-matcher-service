@@ -95,8 +95,8 @@ async def search_rides(
         get_message(
             "ride_search_searching_goal",
             station=escape_markdown_v2(to_title) if to_title else get_message("ride_intent_unknown_station"),
-            start=start_local.strftime("%H:%M"),
-            end=end_local.strftime("%H:%M"),
+            start=escape_markdown_v2(start_local.strftime("%H:%M")),
+            end=escape_markdown_v2(end_local.strftime("%H:%M")),
         )
     )
 
@@ -185,8 +185,8 @@ async def search_rides(
             await searching_msg.edit_text(
                 get_message(
                     "ride_search_no_trains_window",
-                    start=start_local.strftime("%H:%M"),
-                    end=end_local.strftime("%H:%M"),
+                    start=escape_markdown_v2(start_local.strftime("%H:%M")),
+                    end=escape_markdown_v2(end_local.strftime("%H:%M")),
                 )
             )
             return
@@ -246,7 +246,7 @@ async def search_rides(
                         f"{get_message(
                             'ride_new_match_details',
                             thread_title=escape_markdown_v2('совпадающий маршрут'),
-                            departure='см. ваш поиск',
+                            departure=escape_markdown_v2('см. ваш поиск'),
                             name=escape_markdown_v2(user_info['new_user_name']),
                             from_=escape_markdown_v2(user_info['new_user_from_title']),
                             to=escape_markdown_v2(user_info['new_user_to_title']),
@@ -273,9 +273,9 @@ async def search_rides(
             get_message("ride_search_success"),
             get_message(
                 "ride_search_found_trains_window",
-                count=len(candidate_threads),
-                start=start_local.strftime("%H:%M"),
-                end=end_local.strftime("%H:%M"),
+                count=escape_markdown_v2(str(len(candidate_threads))),
+                start=escape_markdown_v2(start_local.strftime("%H:%M")),
+                end=escape_markdown_v2(end_local.strftime("%H:%M")),
             ),
             "",
         ]
@@ -318,7 +318,7 @@ async def search_rides(
                     get_message(
                         "ride_search_match_thread",
                         thread_title=escape_markdown_v2(thread_uid[:8] + "..."),
-                        departure=departure_str,
+                        departure=escape_markdown_v2(departure_str),
                     )
                 )
 
