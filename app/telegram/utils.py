@@ -78,7 +78,7 @@ def format_schedule_reply(
         station_info = get_message(
             "schedule_station", station_id=station_id, station_name=""
         )
-        date_info = f"📅 **Дата:** {date}"
+        date_info = f"📅 *Дата:* {date}"
         error_msg = "❌ Запланированные отправления не найдены"
         suggestions = get_message("schedule_no_departures_suggestions")
 
