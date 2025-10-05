@@ -35,7 +35,7 @@ class Config(BaseSettings):
     # Telegram bot
     telegram_bot_token: str | None = Field(default=None)
     telegram_default_language: str = Field(default="en")  # Default language for the bot
-    telegram_parse_mode: str | None = Field(default="Markdown")
+    telegram_parse_mode: str | None = Field(default="MarkdownV2")
 
     # Redis configuration for caching
     redis_url: str | None = Field(

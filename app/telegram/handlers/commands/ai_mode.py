@@ -71,7 +71,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
             status_text = get_message("ai_mode_status", status=status_word)
             usage_hint = get_message("ai_mode_usage_hint")
             await update.message.reply_text(
-                f"{status_text}\n\n{usage_hint}", parse_mode="Markdown"
+                f"{status_text}\n\n{usage_hint}", parse_mode="MarkdownV2"
             )
             logger.debug(
                 "AI mode status shown to admin user %s: %s", user_info, status_text
