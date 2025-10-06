@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.telegram.utils import is_valid_station_id
+from app.telegram.utils import is_valid_station_id, escape_markdown_v2
 from app.telegram.messages import get_message
 from services.ai.flag_service import AIFlagService
 from services.ai.nvidia_client import NvidiaAIClient
@@ -217,7 +217,7 @@ async def function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_valid_station_id(message_text):
         try:
             await update.message.reply_text(
-                get_message("echo_station_id_suggestion", station_id=message_text)
+                get_message("echo_station_id_suggestion", station_id=escape_markdown_v2(message_text))
             )
             logger.debug(
                 "Station ID suggestion sent to user %s for: %s", user_info, message_text

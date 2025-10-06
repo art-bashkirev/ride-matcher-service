@@ -143,24 +143,24 @@ async def send_route_schedule(
             from_station=pretty_from,
             to_station=pretty_to,
         ),
-        get_message("route_schedule_updated", time=now_local.strftime("%H:%M")),
+        get_message("route_schedule_updated", time=escape_markdown_v2(now_local.strftime("%H:%M"))),
         "",
-        get_message("route_schedule_list_header", date=first_departure_date),
+        get_message("route_schedule_list_header", date=escape_markdown_v2(first_departure_date)),
     ]
 
     for segment in display_segments:
         lines.append(
             get_message(
                 "route_schedule_item",
-                departure=segment.departure.strftime("%H:%M"),
-                arrival=segment.arrival.strftime("%H:%M"),
+                departure=escape_markdown_v2(segment.departure.strftime("%H:%M")),
+                arrival=escape_markdown_v2(segment.arrival.strftime("%H:%M")),
                 train=segment.train_label,
             )
         )
 
     remaining = len(normalised_segments) - len(display_segments)
     if remaining > 0:
-        lines.append(get_message("route_schedule_more", count=remaining))
+        lines.append(get_message("route_schedule_more", count=escape_markdown_v2(str(remaining))))
 
     lines.append("")
     lines.append(
