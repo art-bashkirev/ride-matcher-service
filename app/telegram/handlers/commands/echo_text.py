@@ -36,7 +36,9 @@ async def _handle_ai_mode(
                 await update.message.reply_text(get_message("ai_empty_response"))
                 return
 
-            await update.message.reply_text(ai_response)
+            # Send AI response as plain text to avoid MarkdownV2 parsing issues
+            # AI responses can contain any characters that may conflict with Markdown
+            await update.message.reply_text(ai_response, parse_mode=None)
             logger.info("AI response sent successfully to user %s", user_info)
 
     except ConnectionError as e:
