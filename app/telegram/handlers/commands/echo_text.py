@@ -76,7 +76,9 @@ async def _handle_echo_mode(update: Update, message_text: str, user_info: str):
             return
 
         echo_response = f"Echo: {message_text}"
-        await update.message.reply_text(echo_response)
+        # Send echo response as plain text to avoid MarkdownV2 parsing issues
+        # User messages can contain any characters that may conflict with Markdown
+        await update.message.reply_text(echo_response, parse_mode=None)
         logger.info("Echo response sent successfully to user %s", user_info)
 
     except Exception as e:
