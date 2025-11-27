@@ -33,6 +33,9 @@ logger = get_logger(__name__)
 
 ASKING_ARRIVAL = 1
 _DEFAULT_TOLERANCE_MINUTES = 15
+# Grace period for trains that recently departed - allows users already on a train
+# to still find ride mates on that same train
+_PAST_DEPARTURE_GRACE_MINUTES = 30
 _TIME_TOKEN = re.compile(r"^(?P<h>\d{1,2})(?::(?P<m>\d{1,2}))?$")
 _RANGE_SEPARATORS = re.compile(r"\s*(?:-|–|—|до|to)\s*")
 
@@ -189,7 +192,13 @@ def _parse_arrival_window(
                 start_dt = day_start
             end_dt = center_dt + timedelta(minutes=tolerance_minutes)
 
-        while end_dt <= now + timedelta(minutes=5):
+        # Allow searching for trains that departed within the grace period
+        # This enables users already on a train to find ride mates on that same train
+        grace_threshold = now - timedelta(minutes=_PAST_DEPARTURE_GRACE_MINUTES)
+        
+        # Only shift to next day if the entire window is before the grace threshold
+        # This preserves the ability to match with recently departed trains
+        while end_dt < grace_threshold:
             start_dt += timedelta(days=1)
             end_dt += timedelta(days=1)
 
