@@ -192,13 +192,23 @@ if not (
     continue
 ```
 
-The arrival window is always set to a **future** time by `ride_intent.py`:
+The arrival window allows times within the **30-minute grace period** (see `ride_intent.py`):
 ```python
-# From ride_intent.py - shifts window to future if in the past
-while end_dt <= now + timedelta(minutes=5):
+# Grace period allows users on recently departed trains to still find ride mates
+_PAST_DEPARTURE_GRACE_MINUTES = 30
+
+grace_threshold = now - timedelta(minutes=_PAST_DEPARTURE_GRACE_MINUTES)
+
+# Only shift to next day if the entire window is before the grace threshold
+while end_dt < grace_threshold:
     start_dt += timedelta(days=1)
     end_dt += timedelta(days=1)
 ```
+
+This means:
+- If a user searches for arrival at 08:30 and it's currently 08:45, the search proceeds for today
+- Trains that departed within the last 30 minutes are included in matching
+- The search only shifts to tomorrow if the entire window is more than 30 minutes in the past
 
 #### Display Behavior
 
@@ -206,7 +216,7 @@ while end_dt <= now + timedelta(minutes=5):
 |---------|------------------|-------------------|
 | `/schedule` command | **No** - filters to upcoming only | N/A (display only) |
 | Route schedule previews | **Fallback only** - shows past if no upcoming | N/A (display only) |
-| `/goto` / `/goback` ride search | **No** - future arrival window only | Yes |
+| `/goto` / `/goback` ride search | **Within grace period** - includes trains departed ≤30 min ago | Yes |
 
 ### Schedule Command Filtering (utils.py)
 ```python
