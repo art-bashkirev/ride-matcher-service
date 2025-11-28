@@ -96,13 +96,16 @@ class YandexSchedules:
     async def get_search_results(self, req: SearchRequest) -> SearchResponse:
         params = req.model_dump(mode="json", exclude_none=True, by_alias=True)
         data = await self._get("search", **params)
-
-        return SearchResponse(**data)
+        # Run CPU-bound Pydantic model construction in a thread to avoid
+        # blocking the event loop for large responses
+        return await asyncio.to_thread(SearchResponse, **data)
 
     async def get_schedule(self, req: ScheduleRequest) -> ScheduleResponse:
         params = req.model_dump(mode="json", exclude_none=True, by_alias=True)
         data = await self._get("schedule", **params)
-        return ScheduleResponse(**data)
+        # Run CPU-bound Pydantic model construction in a thread to avoid
+        # blocking the event loop for large responses
+        return await asyncio.to_thread(ScheduleResponse, **data)
 
     async def get_thread(self, req: ThreadRequest) -> ThreadResponse:
         params = req.model_dump(mode="json", exclude_none=True, by_alias=True)
@@ -121,4 +124,6 @@ class YandexSchedules:
             req.model_dump(mode="json", exclude_none=True, by_alias=True) if req else {}
         )
         data = await self._get("stations_list", **params)
-        return StationsListResponse(**data)
+        # Run CPU-bound Pydantic model construction in a thread to avoid
+        # blocking the event loop for large responses
+        return await asyncio.to_thread(StationsListResponse, **data)

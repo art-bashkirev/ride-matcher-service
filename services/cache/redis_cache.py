@@ -1,5 +1,6 @@
 """Redis-based caching layer for Yandex Schedules API responses."""
 
+import asyncio
 import hashlib
 import json
 from typing import Optional, Type, TypeVar
@@ -217,9 +218,13 @@ class YandexSchedulesCache(BaseRedisClient):
                 return None
 
             logger.debug("Cache hit for key: %s", cache_key)
-            response_dict = json.loads(cached_data)
+            # Run CPU-bound JSON parsing and Pydantic model construction in a thread
+            # to avoid blocking the event loop for large responses
+            response = await asyncio.to_thread(
+                self._deserialize_response, cached_data, response_type
+            )
             logger.info("Deserialized cached response for key: %s", cache_key)
-            return response_type(**response_dict)
+            return response
 
         except RedisError as e:
             logger.error("Redis error when getting cache key %s: %s", cache_key, e)
@@ -237,6 +242,16 @@ class YandexSchedulesCache(BaseRedisClient):
                 )
             return None
 
+    @staticmethod
+    def _deserialize_response(cached_data: str, response_type: Type[T]) -> T:
+        """Deserialize cached JSON data into a Pydantic model.
+        
+        This is a CPU-bound operation that should be run in a thread pool
+        to avoid blocking the event loop for large responses.
+        """
+        response_dict = json.loads(cached_data)
+        return response_type(**response_dict)
+
     async def _set_cached_response(
         self, cache_key: str, response: BaseModel, ttl: int
     ) -> bool:
@@ -244,7 +259,11 @@ class YandexSchedulesCache(BaseRedisClient):
         logger.debug("_set_cached_response called for key: %s, ttl: %d", cache_key, ttl)
         try:
             redis_client = await self._get_redis()
-            response_json = response.model_dump_json(by_alias=True)
+            # Run CPU-bound JSON serialization in a thread to avoid blocking
+            # the event loop for large responses
+            response_json = await asyncio.to_thread(
+                response.model_dump_json, by_alias=True
+            )
 
             result = await redis_client.setex(cache_key, ttl, response_json)
 
