@@ -74,7 +74,8 @@ class YandexSchedules:
 
     async def get_copyright(self) -> CopyrightResponse:
         data = await self._get("copyright")
-        return CopyrightResponse(**data)
+        # Small response but keep consistent with other methods
+        return await asyncio.to_thread(CopyrightResponse, **data)
 
     async def get_carrier(self, req: CarrierRequest) -> Union[Carrier, List[Carrier]]:
         # The API's endpoint for a single carrier is "carrier".
@@ -87,9 +88,11 @@ class YandexSchedules:
         # The API returns a dictionary with keys 'carrier' and 'carriers'.
         # We need to check which one exists to decide the return type.
         if "carrier" in data:
-            return Carrier(**data["carrier"])
+            return await asyncio.to_thread(Carrier, **data["carrier"])
         elif "carriers" in data:
-            return [Carrier(**carrier_data) for carrier_data in data["carriers"]]
+            return await asyncio.to_thread(
+                lambda: [Carrier(**carrier_data) for carrier_data in data["carriers"]]
+            )
         else:
             raise ValueError("Unexpected response format from Yandex Schedules API.")
 
@@ -110,7 +113,9 @@ class YandexSchedules:
     async def get_thread(self, req: ThreadRequest) -> ThreadResponse:
         params = req.model_dump(mode="json", exclude_none=True, by_alias=True)
         data = await self._get("thread", **params)
-        return ThreadResponse(**data)
+        # Run CPU-bound Pydantic model construction in a thread to avoid
+        # blocking the event loop for large responses
+        return await asyncio.to_thread(ThreadResponse, **data)
 
     async def get_stations_list(
         self, req: StationsListRequest | None = None
